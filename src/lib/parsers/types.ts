@@ -133,3 +133,9 @@ export interface SourceLocation {
   unitsToTake: number // How many units to take from this location
   isOverstock: boolean // true = overstock (pickable=no), false = pick location (pickable=yes)
 }
+
+// Options for source location selection
+export interface SourceLocationOptions {
+  prioritizeOverstock: boolean // true = overstock first, false = pick locations first
+  useSingleLocation: boolean // true = only show first location with enough, false = combine multiple
+}

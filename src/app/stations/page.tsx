@@ -17,8 +17,9 @@ import {
 } from '@/lib/parsers/pending-shipments'
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
 import { optimizeMultipleStations, type StationConfig, type MultiStationOutput } from '@/lib/analysis/station-optimizer'
-import type { Order, SkuInventory, PendingShipmentRow, InventoryRow } from '@/lib/parsers/types'
-import { Package, Layers, Play, LogOut, Plus, Trash2, ArrowLeft } from 'lucide-react'
+import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SourceLocationOptions } from '@/lib/parsers/types'
+import { Package, Layers, Play, LogOut, Plus, Trash2, ArrowLeft, MapPin } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StationResults } from '@/components/StationResults'
 import { StationExportButtons } from '@/components/StationExportButtons'
 import Link from 'next/link'
@@ -46,6 +47,12 @@ export default function StationsPage() {
     { id: 1, name: 'Station 1', skuSlots: 50 },
     { id: 2, name: 'Station 2', skuSlots: 50 },
   ])
+
+  // Source location options
+  const [sourceLocationOptions, setSourceLocationOptions] = useState<SourceLocationOptions>({
+    prioritizeOverstock: true,
+    useSingleLocation: false,
+  })
 
   // Analysis results
   const [analysisResults, setAnalysisResults] = useState<MultiStationOutput | null>(null)
@@ -155,7 +162,7 @@ export default function StationsPage() {
         return
       }
 
-      const results = optimizeMultipleStations(stations, filteredOrders, inventoryMap)
+      const results = optimizeMultipleStations(stations, filteredOrders, inventoryMap, sourceLocationOptions)
       setAnalysisResults(results)
       setTotalOrdersAnalyzed(filteredOrders.length)
 
@@ -168,7 +175,7 @@ export default function StationsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, stations])
+  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, stations, sourceLocationOptions])
 
   const clearAll = () => {
     setPendingShipmentsFile(null)
@@ -357,6 +364,56 @@ export default function StationsPage() {
                   <p className="text-xs text-[#6b7a8c]">
                     Total: {stations.reduce((sum, s) => sum + s.skuSlots, 0)} SKU slots across {stations.length} station{stations.length !== 1 ? 's' : ''}
                   </p>
+                </div>
+
+                <Separator className="bg-[#e2e8f0]" />
+
+                {/* Source Location Options */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#6de5a2]" />
+                    <Label className="text-sm font-medium text-[#263444]">
+                      Source Location Options
+                    </Label>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="prioritizeOverstock"
+                        checked={sourceLocationOptions.prioritizeOverstock}
+                        onCheckedChange={(checked) => 
+                          setSourceLocationOptions(prev => ({ ...prev, prioritizeOverstock: checked === true }))
+                        }
+                        className="border-[#c0ccdb] data-[state=checked]:bg-[#6de5a2] data-[state=checked]:border-[#6de5a2]"
+                      />
+                      <Label htmlFor="prioritizeOverstock" className="text-sm text-[#263444] cursor-pointer">
+                        Prioritize overstock locations
+                      </Label>
+                    </div>
+                    <p className="text-xs text-[#6b7a8c] pl-6">
+                      Pull from non-pickable (overstock) before pickable locations
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="useSingleLocation"
+                        checked={sourceLocationOptions.useSingleLocation}
+                        onCheckedChange={(checked) => 
+                          setSourceLocationOptions(prev => ({ ...prev, useSingleLocation: checked === true }))
+                        }
+                        className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
+                      />
+                      <Label htmlFor="useSingleLocation" className="text-sm text-[#263444] cursor-pointer">
+                        Single location only
+                      </Label>
+                    </div>
+                    <p className="text-xs text-[#6b7a8c] pl-6">
+                      Show first location with enough units (don&apos;t combine)
+                    </p>
+                  </div>
                 </div>
 
                 <Separator className="bg-[#e2e8f0]" />

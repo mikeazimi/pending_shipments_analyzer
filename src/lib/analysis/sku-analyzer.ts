@@ -1,5 +1,10 @@
-import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput, SkuSlotsOutput, OptimalSkuResult, SourceLocation } from '@/lib/parsers/types'
+import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput, SkuSlotsOutput, OptimalSkuResult, SourceLocation, SourceLocationOptions } from '@/lib/parsers/types'
 import { findSourceLocations } from '@/lib/parsers/inventory'
+
+const defaultSourceLocationOptions: SourceLocationOptions = {
+  prioritizeOverstock: true,
+  useSingleLocation: false,
+}
 
 interface SkuDemand {
   sku: string
@@ -369,7 +374,8 @@ function calculateIncrementalOrders(
 export function findOptimalSkuSet(
   orders: Order[],
   inventoryMap: Map<string, SkuInventory>,
-  maxSkuSlots: number
+  maxSkuSlots: number,
+  sourceLocationOptions: SourceLocationOptions = defaultSourceLocationOptions
 ): SkuSlotsOutput {
   const demandMap = calculateSkuDemand(orders)
   
@@ -456,7 +462,7 @@ export function findOptimalSkuSet(
       totalUnitsNeeded: demand.totalUnitsNeeded,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       incrementalOrdersUnlocked: bestIncrementalOrders,
-      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsNeededForStation),
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsNeededForStation, sourceLocationOptions),
     })
     
     // Remove from candidates

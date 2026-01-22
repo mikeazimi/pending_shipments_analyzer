@@ -1,5 +1,10 @@
-import type { Order, SkuInventory, SourceLocation } from '@/lib/parsers/types'
+import type { Order, SkuInventory, SourceLocation, SourceLocationOptions } from '@/lib/parsers/types'
 import { findSourceLocations } from '@/lib/parsers/inventory'
+
+const defaultSourceLocationOptions: SourceLocationOptions = {
+  prioritizeOverstock: true,
+  useSingleLocation: false,
+}
 
 export interface StationConfig {
   id: number
@@ -245,7 +250,7 @@ function optimizeStation(
       unitsNeeded: unitsAtStation,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       ordersAtStation,
-      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation),
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation, defaultSourceLocationOptions),
     })
     
     // Remove from available
@@ -278,7 +283,8 @@ function optimizeStation(
 export function optimizeMultipleStations(
   stationConfigs: StationConfig[],
   orders: Order[],
-  inventoryMap: Map<string, SkuInventory>
+  inventoryMap: Map<string, SkuInventory>,
+  sourceLocationOptions: SourceLocationOptions = defaultSourceLocationOptions
 ): MultiStationOutput {
   const skuDemand = calculateSkuDemand(orders)
   const globallyFulfilledOrders = new Set<string>()
@@ -396,7 +402,7 @@ export function optimizeMultipleStations(
       unitsNeeded: unitsAtStation,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       ordersAtStation: bestOrdersFulfilled.length,
-      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation),
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation, sourceLocationOptions),
     })
     
     // Move to next station (round-robin)
@@ -424,7 +430,7 @@ export function optimizeMultipleStations(
       // Recalculate units needed and source locations based on final orders
       const unitsNeeded = calculateUnitsNeededAtStation(skuResult.sku, finalOrders, orders)
       skuResult.unitsNeeded = unitsNeeded
-      skuResult.sourceLocations = findSourceLocations(inventoryMap, skuResult.sku, unitsNeeded)
+      skuResult.sourceLocations = findSourceLocations(inventoryMap, skuResult.sku, unitsNeeded, sourceLocationOptions)
     }
     
     // Sort SKUs by orders at station (descending)

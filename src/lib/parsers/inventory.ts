@@ -122,26 +122,40 @@ export interface SourceLocationResult {
   isOverstock: boolean // true = overstock (pickable=no), false = pick location (pickable=yes)
 }
 
+export interface SourceLocationOptions {
+  prioritizeOverstock: boolean // true = overstock first, false = pick locations first
+  useSingleLocation: boolean // true = only show first location with enough, false = combine multiple
+}
+
+const defaultSourceLocationOptions: SourceLocationOptions = {
+  prioritizeOverstock: true,
+  useSingleLocation: false,
+}
+
 /**
  * Find the best source locations to pull inventory from for a given SKU.
  * 
- * Priority order:
- * 1. Overstock locations (sellable=yes, pickable=no) - don't steal from pick area
- * 2. Pick locations (sellable=yes, pickable=yes) - only if overstock insufficient
+ * Options:
+ * - prioritizeOverstock: true = overstock (pickable=no) first, false = pick locations first
+ * - useSingleLocation: true = only return first location with enough units, false = combine multiple
  * 
- * Within each priority, prefers larger quantities first.
+ * Results are always sorted alphanumerically by location name.
  */
 export function findSourceLocations(
   inventoryMap: Map<string, SkuInventory>,
   sku: string,
-  unitsNeeded: number
+  unitsNeeded: number,
+  options: SourceLocationOptions = defaultSourceLocationOptions
 ): SourceLocationResult[] {
   const inventory = inventoryMap.get(sku)
   if (!inventory || inventory.locations.length === 0 || unitsNeeded <= 0) {
     return []
   }
 
+  const { prioritizeOverstock, useSingleLocation } = options
+
   // Separate overstock (pickable=no) from pick locations (pickable=yes)
+  // Sort each group by units descending for selection, but final results will be sorted alphabetically
   const overstockLocations = inventory.locations
     .filter(loc => !loc.pickable && loc.units > 0)
     .sort((a, b) => b.units - a.units)
@@ -150,22 +164,43 @@ export function findSourceLocations(
     .filter(loc => loc.pickable && loc.units > 0)
     .sort((a, b) => b.units - a.units)
   
+  // Determine priority order based on option
+  const primaryLocations = prioritizeOverstock ? overstockLocations : pickLocations
+  const secondaryLocations = prioritizeOverstock ? pickLocations : overstockLocations
+  
+  // If single location mode, find first location with enough units
+  if (useSingleLocation) {
+    // Check primary locations first
+    const singlePrimary = primaryLocations.find(loc => loc.units >= unitsNeeded)
+    if (singlePrimary) {
+      return [{
+        location: singlePrimary.location,
+        units: singlePrimary.units,
+        unitsToTake: unitsNeeded,
+        isOverstock: !singlePrimary.pickable,
+      }]
+    }
+    
+    // Check secondary locations
+    const singleSecondary = secondaryLocations.find(loc => loc.units >= unitsNeeded)
+    if (singleSecondary) {
+      return [{
+        location: singleSecondary.location,
+        units: singleSecondary.units,
+        unitsToTake: unitsNeeded,
+        isOverstock: !singleSecondary.pickable,
+      }]
+    }
+    
+    // No single location has enough - fall through to combine multiple
+  }
+  
+  // Combine multiple locations
   const sourceLocations: SourceLocationResult[] = []
   let remaining = unitsNeeded
   
-  // First, try to fulfill entirely from overstock
-  const singleOverstock = overstockLocations.find(loc => loc.units >= unitsNeeded)
-  if (singleOverstock) {
-    return [{
-      location: singleOverstock.location,
-      units: singleOverstock.units,
-      unitsToTake: unitsNeeded,
-      isOverstock: true,
-    }]
-  }
-  
-  // Use overstock locations first (priority)
-  for (const loc of overstockLocations) {
+  // Use primary locations first
+  for (const loc of primaryLocations) {
     if (remaining <= 0) break
     
     const toTake = Math.min(loc.units, remaining)
@@ -173,14 +208,14 @@ export function findSourceLocations(
       location: loc.location,
       units: loc.units,
       unitsToTake: toTake,
-      isOverstock: true,
+      isOverstock: !loc.pickable,
     })
     remaining -= toTake
   }
   
-  // If still need more, use pick locations
+  // If still need more, use secondary locations
   if (remaining > 0) {
-    for (const loc of pickLocations) {
+    for (const loc of secondaryLocations) {
       if (remaining <= 0) break
       
       const toTake = Math.min(loc.units, remaining)
@@ -188,11 +223,14 @@ export function findSourceLocations(
         location: loc.location,
         units: loc.units,
         unitsToTake: toTake,
-        isOverstock: false,
+        isOverstock: !loc.pickable,
       })
       remaining -= toTake
     }
   }
+  
+  // Sort results alphanumerically by location name
+  sourceLocations.sort((a, b) => a.location.localeCompare(b.location, undefined, { numeric: true }))
   
   return sourceLocations
 }

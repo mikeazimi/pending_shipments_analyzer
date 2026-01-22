@@ -15,8 +15,9 @@ import {
 } from '@/lib/parsers/pending-shipments'
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
 import { findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
-import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SkuSlotsOutput } from '@/lib/parsers/types'
-import { Package, Boxes, Play, LogOut, Layers } from 'lucide-react'
+import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SkuSlotsOutput, SourceLocationOptions } from '@/lib/parsers/types'
+import { Package, Boxes, Play, LogOut, Layers, MapPin } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SkuSlotsResults } from '@/components/SkuSlotsResults'
@@ -43,6 +44,12 @@ export default function DashboardPage() {
 
   // SKU Slots configuration
   const [skuSlotCount, setSkuSlotCount] = useState<number>(50)
+
+  // Source location options
+  const [sourceLocationOptions, setSourceLocationOptions] = useState<SourceLocationOptions>({
+    prioritizeOverstock: true,
+    useSingleLocation: false,
+  })
 
   // Analysis results
   const [analysisResults, setAnalysisResults] = useState<SkuSlotsOutput | null>(null)
@@ -128,7 +135,7 @@ export default function DashboardPage() {
         return
       }
 
-      const results = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount)
+      const results = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount, sourceLocationOptions)
       setAnalysisResults(results)
       setTotalOrdersAnalyzed(filteredOrders.length)
 
@@ -141,7 +148,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, skuSlotCount])
+  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, skuSlotCount, sourceLocationOptions])
 
   const clearAll = () => {
     setPendingShipmentsFile(null)
@@ -287,6 +294,56 @@ export default function DashboardPage() {
                   <p className="text-xs text-[#6b7a8c]">
                     Find the optimal {skuSlotCount} SKUs to stock
                   </p>
+                </div>
+
+                <Separator className="bg-[#e2e8f0]" />
+
+                {/* Source Location Options */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#6de5a2]" />
+                    <Label className="text-sm font-medium text-[#263444]">
+                      Source Location Options
+                    </Label>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="prioritizeOverstock"
+                        checked={sourceLocationOptions.prioritizeOverstock}
+                        onCheckedChange={(checked) => 
+                          setSourceLocationOptions(prev => ({ ...prev, prioritizeOverstock: checked === true }))
+                        }
+                        className="border-[#c0ccdb] data-[state=checked]:bg-[#6de5a2] data-[state=checked]:border-[#6de5a2]"
+                      />
+                      <Label htmlFor="prioritizeOverstock" className="text-sm text-[#263444] cursor-pointer">
+                        Prioritize overstock locations
+                      </Label>
+                    </div>
+                    <p className="text-xs text-[#6b7a8c] pl-6">
+                      Pull from non-pickable (overstock) before pickable locations
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="useSingleLocation"
+                        checked={sourceLocationOptions.useSingleLocation}
+                        onCheckedChange={(checked) => 
+                          setSourceLocationOptions(prev => ({ ...prev, useSingleLocation: checked === true }))
+                        }
+                        className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
+                      />
+                      <Label htmlFor="useSingleLocation" className="text-sm text-[#263444] cursor-pointer">
+                        Single location only
+                      </Label>
+                    </div>
+                    <p className="text-xs text-[#6b7a8c] pl-6">
+                      Show first location with enough units (don&apos;t combine)
+                    </p>
+                  </div>
                 </div>
 
                 <Separator className="bg-[#e2e8f0]" />
