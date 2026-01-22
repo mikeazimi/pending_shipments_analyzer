@@ -18,9 +18,12 @@ import {
   filterOrders,
 } from '@/lib/parsers/pending-shipments'
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
-import { runFullAnalysis } from '@/lib/analysis/sku-analyzer'
+import { runFullAnalysis, findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
 import type { Order, SkuInventory, AnalysisOutput, PendingShipmentRow, InventoryRow } from '@/lib/parsers/types'
-import { Package, BarChart3, Settings2, Play, LogOut, History } from 'lucide-react'
+import { Package, BarChart3, Settings2, Play, LogOut, History, Boxes } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { SkuSlotsResults } from '@/components/SkuSlotsResults'
 import { ExportButtons } from '@/components/ExportButtons'
 import Link from 'next/link'
 
@@ -41,6 +44,9 @@ export default function DashboardPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [excludeAllocated, setExcludeAllocated] = useState(true)
   const [excludeToted, setExcludeToted] = useState(true)
+
+  // SKU Slots configuration
+  const [skuSlotCount, setSkuSlotCount] = useState<number>(50)
 
   // Analysis results
   const [analysisOutput, setAnalysisOutput] = useState<AnalysisOutput | null>(null)
@@ -121,10 +127,20 @@ export default function DashboardPage() {
       }
 
       const output = runFullAnalysis(filteredOrders, inventoryMap)
+      
+      // Run SKU slots optimization if inventory is available
+      if (inventoryMap && skuSlotCount > 0) {
+        const skuSlotsResults = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount)
+        output.skuSlotsResults = skuSlotsResults
+      }
+      
       setAnalysisOutput(output)
 
+      const slotsMsg = output.skuSlotsResults 
+        ? ` | ${output.skuSlotsResults.totalOrdersFulfilled} orders fulfillable with ${skuSlotCount} SKUs`
+        : ''
       toast.success(
-        `Analyzed ${output.summary.totalOrders} orders - ${output.summary.ordersReadyToFulfill} ready to fulfill`
+        `Analyzed ${output.summary.totalOrders} orders - ${output.summary.ordersReadyToFulfill} ready to fulfill${slotsMsg}`
       )
     } catch (error) {
       console.error('Analysis failed:', error)
@@ -256,6 +272,35 @@ export default function DashboardPage() {
                     />
 
                     <Separator className="bg-slate-700" />
+
+                    {/* SKU Slots Configuration */}
+                    {inventoryMap && (
+                      <>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Boxes className="w-4 h-4 text-purple-400" />
+                            <Label className="text-sm font-medium text-slate-300">
+                              SKU Slots in Pick Area
+                            </Label>
+                          </div>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={500}
+                            value={skuSlotCount}
+                            onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
+                            placeholder="50"
+                            className="bg-slate-900/50 border-slate-600 text-white"
+                          />
+                          <p className="text-xs text-slate-500">
+                            Enter the number of SKU slots available in your pick area. 
+                            The analysis will find the optimal {skuSlotCount} SKUs to stock.
+                          </p>
+                        </div>
+
+                        <Separator className="bg-slate-700" />
+                      </>
+                    )}
                   </>
                 )}
 
@@ -350,8 +395,17 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                <Tabs defaultValue={inventoryMap ? 'constrained' : 'unconstrained'} className="space-y-4">
+                <Tabs defaultValue={analysisOutput.skuSlotsResults ? 'skuslots' : (inventoryMap ? 'constrained' : 'unconstrained')} className="space-y-4">
                   <TabsList className="bg-slate-800/50 border border-slate-700">
+                    {analysisOutput.skuSlotsResults && (
+                      <TabsTrigger
+                        value="skuslots"
+                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                      >
+                        <Boxes className="w-4 h-4 mr-1" />
+                        Optimal {skuSlotCount} SKUs
+                      </TabsTrigger>
+                    )}
                     <TabsTrigger
                       value="unconstrained"
                       className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
@@ -367,6 +421,12 @@ export default function DashboardPage() {
                       </TabsTrigger>
                     )}
                   </TabsList>
+
+                  {analysisOutput.skuSlotsResults && (
+                    <TabsContent value="skuslots">
+                      <SkuSlotsResults results={analysisOutput.skuSlotsResults} />
+                    </TabsContent>
+                  )}
 
                   <TabsContent value="unconstrained">
                     <AnalysisResults

@@ -1,4 +1,4 @@
-import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput } from '@/lib/parsers/types'
+import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput, SkuSlotsOutput, OptimalSkuResult } from '@/lib/parsers/types'
 
 interface SkuDemand {
   sku: string
@@ -258,4 +258,226 @@ export function getOrdersUnlockedBySku(
     // Check if the order would be fulfillable with the hypothetical inventory
     return canFulfillOrder(order, hypotheticalInventory, new Map())
   })
+}
+
+/**
+ * Check if an order can be fulfilled with a given set of selected SKUs
+ * (assuming unlimited inventory for selected SKUs)
+ */
+function canFulfillOrderWithSkuSet(
+  order: Order,
+  selectedSkus: Set<string>,
+  inventoryMap: Map<string, SkuInventory>
+): boolean {
+  for (const lineItem of order.lineItems) {
+    // If SKU is in our selected set, check if we have enough inventory
+    if (selectedSkus.has(lineItem.sku)) {
+      const available = inventoryMap.get(lineItem.sku)?.totalSellableUnits ?? 0
+      if (available < lineItem.quantity) {
+        return false
+      }
+    } else {
+      // SKU not in our selected set - order can't be fulfilled
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Get all unique SKUs needed for an order
+ */
+function getSkusForOrder(order: Order): Set<string> {
+  return new Set(order.lineItems.map(li => li.sku))
+}
+
+/**
+ * Calculate how many new orders would be fulfilled by adding a SKU to the selected set
+ */
+function calculateIncrementalOrders(
+  candidateSku: string,
+  currentSelectedSkus: Set<string>,
+  orders: Order[],
+  inventoryMap: Map<string, SkuInventory>,
+  alreadyFulfilledOrders: Set<string>
+): { incrementalOrders: number; ordersFulfilled: string[] } {
+  const testSet = new Set(currentSelectedSkus)
+  testSet.add(candidateSku)
+  
+  const ordersFulfilled: string[] = []
+  
+  for (const order of orders) {
+    // Skip already fulfilled orders
+    if (alreadyFulfilledOrders.has(order.orderNumber)) continue
+    
+    // Check if all SKUs for this order are in our test set AND have sufficient inventory
+    const orderSkus = getSkusForOrder(order)
+    let canFulfill = true
+    
+    for (const sku of orderSkus) {
+      if (!testSet.has(sku)) {
+        canFulfill = false
+        break
+      }
+      // Check inventory for this SKU
+      const needed = order.lineItems.find(li => li.sku === sku)?.quantity ?? 0
+      const available = inventoryMap.get(sku)?.totalSellableUnits ?? 0
+      if (available < needed) {
+        canFulfill = false
+        break
+      }
+    }
+    
+    if (canFulfill) {
+      ordersFulfilled.push(order.orderNumber)
+    }
+  }
+  
+  return { incrementalOrders: ordersFulfilled.length, ordersFulfilled }
+}
+
+/**
+ * Greedy algorithm to find optimal SKU set for maximum order fulfillment
+ * Only considers SKUs that have sellable inventory
+ */
+export function findOptimalSkuSet(
+  orders: Order[],
+  inventoryMap: Map<string, SkuInventory>,
+  maxSkuSlots: number
+): SkuSlotsOutput {
+  const demandMap = calculateSkuDemand(orders)
+  
+  // Separate SKUs into those with inventory and those without
+  const skusWithInventory: string[] = []
+  const skusWithoutInventory: string[] = []
+  
+  for (const [sku] of demandMap) {
+    const inventory = inventoryMap.get(sku)?.totalSellableUnits ?? 0
+    if (inventory > 0) {
+      skusWithInventory.push(sku)
+    } else {
+      skusWithoutInventory.push(sku)
+    }
+  }
+  
+  // Greedy selection for SKUs WITH inventory
+  const selectedSkus = new Set<string>()
+  const skusToStock: OptimalSkuResult[] = []
+  const fulfilledOrders = new Set<string>()
+  
+  while (selectedSkus.size < maxSkuSlots && skusWithInventory.length > 0) {
+    let bestSku: string | null = null
+    let bestIncrementalOrders = -1
+    let bestOrdersFulfilled: string[] = []
+    
+    // Find the SKU that would unlock the most additional orders
+    for (const sku of skusWithInventory) {
+      if (selectedSkus.has(sku)) continue
+      
+      const { incrementalOrders, ordersFulfilled } = calculateIncrementalOrders(
+        sku,
+        selectedSkus,
+        orders,
+        inventoryMap,
+        fulfilledOrders
+      )
+      
+      if (incrementalOrders > bestIncrementalOrders) {
+        bestIncrementalOrders = incrementalOrders
+        bestSku = sku
+        bestOrdersFulfilled = ordersFulfilled
+      }
+    }
+    
+    // If no SKU can unlock new orders, try to add SKUs that are part of unfulfilled orders
+    if (bestSku === null || bestIncrementalOrders === 0) {
+      // Find SKUs that appear in orders we haven't fulfilled yet
+      for (const order of orders) {
+        if (fulfilledOrders.has(order.orderNumber)) continue
+        
+        for (const lineItem of order.lineItems) {
+          if (!selectedSkus.has(lineItem.sku) && skusWithInventory.includes(lineItem.sku)) {
+            const inventory = inventoryMap.get(lineItem.sku)?.totalSellableUnits ?? 0
+            if (inventory >= lineItem.quantity) {
+              bestSku = lineItem.sku
+              break
+            }
+          }
+        }
+        if (bestSku) break
+      }
+    }
+    
+    if (!bestSku) break
+    
+    // Add the best SKU to our selection
+    selectedSkus.add(bestSku)
+    const demand = demandMap.get(bestSku)!
+    
+    // Mark orders as fulfilled
+    for (const orderNum of bestOrdersFulfilled) {
+      fulfilledOrders.add(orderNum)
+    }
+    
+    skusToStock.push({
+      sku: bestSku,
+      productName: demand.productName,
+      ordersImpacted: demand.ordersContaining.size,
+      ordersFulfilled: bestOrdersFulfilled,
+      totalUnitsNeeded: demand.totalUnitsNeeded,
+      currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
+      incrementalOrdersUnlocked: bestIncrementalOrders,
+    })
+    
+    // Remove from candidates
+    const idx = skusWithInventory.indexOf(bestSku)
+    if (idx > -1) skusWithInventory.splice(idx, 1)
+  }
+  
+  // Build list of SKUs to prioritize receiving (no inventory but high impact)
+  const skusToPrioritizeReceiving: OptimalSkuResult[] = []
+  
+  for (const sku of skusWithoutInventory) {
+    const demand = demandMap.get(sku)!
+    
+    // Calculate how many orders this SKU appears in that we couldn't fulfill
+    const ordersBlocked = Array.from(demand.ordersContaining).filter(
+      orderNum => !fulfilledOrders.has(orderNum)
+    )
+    
+    if (ordersBlocked.length > 0) {
+      skusToPrioritizeReceiving.push({
+        sku,
+        productName: demand.productName,
+        ordersImpacted: demand.ordersContaining.size,
+        ordersFulfilled: [], // Can't fulfill any since no inventory
+        totalUnitsNeeded: demand.totalUnitsNeeded,
+        currentInventory: 0,
+        incrementalOrdersUnlocked: ordersBlocked.length,
+      })
+    }
+  }
+  
+  // Sort by impact (orders blocked)
+  skusToPrioritizeReceiving.sort((a, b) => b.incrementalOrdersUnlocked - a.incrementalOrdersUnlocked)
+  
+  // Calculate final fulfilled orders count
+  const finalFulfilledOrders = new Set<string>()
+  for (const order of orders) {
+    if (canFulfillOrderWithSkuSet(order, selectedSkus, inventoryMap)) {
+      finalFulfilledOrders.add(order.orderNumber)
+    }
+  }
+  
+  return {
+    skuSlotCount: maxSkuSlots,
+    skusToStock,
+    skusToPrioritizeReceiving,
+    ordersFulfilled: Array.from(finalFulfilledOrders),
+    totalOrdersFulfilled: finalFulfilledOrders.size,
+    totalOrdersPartiallyFulfilled: orders.length - finalFulfilledOrders.size,
+    fulfillmentRate: orders.length > 0 
+      ? (finalFulfilledOrders.size / orders.length) * 100 
+      : 0,
+  }
 }

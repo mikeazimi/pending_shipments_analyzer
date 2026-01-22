@@ -1,4 +1,4 @@
-import type { SkuAnalysisResult, AnalysisOutput } from '@/lib/parsers/types'
+import type { SkuAnalysisResult, AnalysisOutput, OptimalSkuResult } from '@/lib/parsers/types'
 
 /**
  * Convert analysis results to CSV format
@@ -31,6 +31,35 @@ export function resultsToCSV(
 }
 
 /**
+ * Convert optimal SKU results to CSV format
+ */
+export function optimalSkusToCSV(results: OptimalSkuResult[]): string {
+  const headers = [
+    'Rank',
+    'SKU',
+    'Product Name',
+    'Orders Impacted',
+    'Incremental Orders Unlocked',
+    'Units Needed',
+    'Current Inventory',
+    'Orders Fulfilled',
+  ]
+
+  const rows = results.map((result, index) => [
+    index + 1,
+    `"${result.sku}"`,
+    `"${result.productName.replace(/"/g, '""')}"`,
+    result.ordersImpacted,
+    result.incrementalOrdersUnlocked,
+    result.totalUnitsNeeded,
+    result.currentInventory,
+    `"${result.ordersFulfilled.join(', ')}"`,
+  ])
+
+  return [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
+}
+
+/**
  * Generate full analysis report CSV
  */
 export function generateFullReport(output: AnalysisOutput): string {
@@ -56,10 +85,32 @@ export function generateFullReport(output: AnalysisOutput): string {
       ? [
           '# Inventory-Constrained Analysis',
           resultsToCSV(output.inventoryConstrainedResults, true),
+          '',
         ]
       : []
 
-  return [...summarySection, ...unconstrainedSection, ...constrainedSection].join('\n')
+  // SKU Slots optimization results
+  const skuSlotsSection = output.skuSlotsResults
+    ? [
+        '# SKU Slots Optimization',
+        `SKU Slots Available,${output.skuSlotsResults.skuSlotCount}`,
+        `Total Orders Fulfilled,${output.skuSlotsResults.totalOrdersFulfilled}`,
+        `Fulfillment Rate,${output.skuSlotsResults.fulfillmentRate.toFixed(1)}%`,
+        `SKUs to Stock,${output.skuSlotsResults.skusToStock.length}`,
+        `SKUs Awaiting Inventory,${output.skuSlotsResults.skusToPrioritizeReceiving.length}`,
+        '',
+        '## SKUs to Stock in Pick Area',
+        optimalSkusToCSV(output.skuSlotsResults.skusToStock),
+        '',
+        '## High-Impact SKUs Awaiting Inventory',
+        optimalSkusToCSV(output.skuSlotsResults.skusToPrioritizeReceiving),
+        '',
+        '## Orders Fulfillable with Optimal SKU Set',
+        `"${output.skuSlotsResults.ordersFulfilled.join('", "')}"`,
+      ]
+    : []
+
+  return [...summarySection, ...unconstrainedSection, ...constrainedSection, ...skuSlotsSection].join('\n')
 }
 
 /**

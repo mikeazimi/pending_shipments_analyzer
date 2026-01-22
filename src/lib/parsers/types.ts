@@ -94,4 +94,32 @@ export interface AnalysisOutput {
     uniqueSkusNeeded: number
     topMissingSku: string | null
   }
+  // SKU Slots optimization results
+  skuSlotsResults?: SkuSlotsOutput
+}
+
+// SKU Slots Feature Types
+export interface SkuSlotsOutput {
+  skuSlotCount: number
+  // SKUs to stock in pick area (have inventory)
+  skusToStock: OptimalSkuResult[]
+  // SKUs to prioritize receiving (no inventory but high impact)
+  skusToPrioritizeReceiving: OptimalSkuResult[]
+  // Orders that would be completely fulfilled with the selected SKUs
+  ordersFulfilled: string[]
+  // Summary stats
+  totalOrdersFulfilled: number
+  totalOrdersPartiallyFulfilled: number
+  fulfillmentRate: number
+}
+
+export interface OptimalSkuResult {
+  sku: string
+  productName: string
+  ordersImpacted: number
+  ordersFulfilled: string[] // Orders this SKU helps complete
+  totalUnitsNeeded: number
+  currentInventory: number
+  // How many NEW orders would be fulfilled by adding this SKU to the set
+  incrementalOrdersUnlocked: number
 }
