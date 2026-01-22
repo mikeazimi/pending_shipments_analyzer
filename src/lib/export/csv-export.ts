@@ -1,0 +1,87 @@
+import type { SkuAnalysisResult, AnalysisOutput } from '@/lib/parsers/types'
+
+/**
+ * Convert analysis results to CSV format
+ */
+export function resultsToCSV(
+  results: SkuAnalysisResult[],
+  includeInventory: boolean = false
+): string {
+  const headers = [
+    'Rank',
+    'SKU',
+    'Product Name',
+    'Orders Impacted',
+    'Units Needed',
+    ...(includeInventory ? ['Current Stock', 'Inventory Gap'] : []),
+    'Priority Tier',
+  ]
+
+  const rows = results.map((result, index) => [
+    index + 1,
+    `"${result.sku}"`,
+    `"${result.productName.replace(/"/g, '""')}"`,
+    result.ordersImpacted,
+    result.totalUnitsNeeded,
+    ...(includeInventory ? [result.currentInventory, result.inventoryGap] : []),
+    result.tier,
+  ])
+
+  return [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
+}
+
+/**
+ * Generate full analysis report CSV
+ */
+export function generateFullReport(output: AnalysisOutput): string {
+  const summarySection = [
+    '# Analysis Summary',
+    `Total Orders,${output.summary.totalOrders}`,
+    `Orders Analyzed,${output.summary.totalOrdersAnalyzed}`,
+    `Ready to Fulfill,${output.summary.ordersReadyToFulfill}`,
+    `Needing Stock,${output.summary.ordersNeedingStock}`,
+    `Unique SKUs,${output.summary.uniqueSkusNeeded}`,
+    `Top Missing SKU,${output.summary.topMissingSku || 'N/A'}`,
+    '',
+  ]
+
+  const unconstrainedSection = [
+    '# Unconstrained SKU Demand',
+    resultsToCSV(output.unconstrainedResults, false),
+    '',
+  ]
+
+  const constrainedSection =
+    output.inventoryConstrainedResults.length > 0
+      ? [
+          '# Inventory-Constrained Analysis',
+          resultsToCSV(output.inventoryConstrainedResults, true),
+        ]
+      : []
+
+  return [...summarySection, ...unconstrainedSection, ...constrainedSection].join('\n')
+}
+
+/**
+ * Trigger CSV download in browser
+ */
+export function downloadCSV(content: string, filename: string): void {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', filename)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * Generate timestamp string for filenames
+ */
+export function getTimestampString(): string {
+  const now = new Date()
+  return now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+}
