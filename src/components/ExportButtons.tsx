@@ -24,9 +24,11 @@ function generateSkuSlotsCSV(results: SkuSlotsOutput): string {
   lines.push('# SKUs to Stock in Pick Area')
   lines.push('Rank,SKU,Product Name,Units Needed,Source Locations,Current Inventory,Orders Impacted,Incremental Orders')
   results.skusToStock.forEach((sku, index) => {
-    // Format source locations as "LOC1 (qty), LOC2 (qty)"
+    // Format source locations as "LOC1 (qty) [overstock], LOC2 (qty) [pick]"
     const sourceLocationsStr = sku.sourceLocations && sku.sourceLocations.length > 0
-      ? sku.sourceLocations.map(loc => `${loc.location} (${loc.unitsToTake})`).join('; ')
+      ? sku.sourceLocations.map(loc => 
+          `${loc.location} (${loc.unitsToTake})${loc.isOverstock ? '' : ' [PICK]'}`
+        ).join('; ')
       : 'N/A'
     lines.push([
       index + 1,

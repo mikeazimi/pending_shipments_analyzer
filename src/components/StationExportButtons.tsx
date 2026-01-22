@@ -45,9 +45,11 @@ function generateStationsCSV(results: MultiStationOutput): string {
       const productName = sku.productName.includes(',') 
         ? `"${sku.productName.replace(/"/g, '""')}"` 
         : sku.productName
-      // Format source locations
+      // Format source locations - mark pick locations with [PICK]
       const sourceLocationsStr = sku.sourceLocations && sku.sourceLocations.length > 0
-        ? sku.sourceLocations.map(loc => `${loc.location} (${loc.unitsToTake})`).join('; ')
+        ? sku.sourceLocations.map(loc => 
+            `${loc.location} (${loc.unitsToTake})${loc.isOverstock ? '' : ' [PICK]'}`
+          ).join('; ')
         : 'N/A'
       lines.push(`${index + 1},${sku.sku},${productName},${sku.unitsNeeded},"${sourceLocationsStr}",${sku.currentInventory},${sku.ordersAtStation}`)
     })

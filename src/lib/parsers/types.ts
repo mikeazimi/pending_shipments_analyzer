@@ -131,4 +131,5 @@ export interface SourceLocation {
   location: string
   units: number
   unitsToTake: number // How many units to take from this location
+  isOverstock: boolean // true = overstock (pickable=no), false = pick location (pickable=yes)
 }

@@ -40,11 +40,16 @@ function SourceLocationsCell({ locations }: { locations?: SourceLocation[] }) {
     <div className="space-y-1">
       {locations.map((loc, idx) => (
         <div key={idx} className="flex items-center gap-1 text-xs">
-          <MapPin className="w-3 h-3 text-[#3281fd] flex-shrink-0" />
+          <MapPin className={`w-3 h-3 flex-shrink-0 ${loc.isOverstock ? 'text-[#6de5a2]' : 'text-[#ffce75]'}`} />
           <span className="font-mono text-[#263444]">{loc.location}</span>
           <span className="text-[#6b7a8c]">
             ({loc.unitsToTake}{loc.unitsToTake !== loc.units && ` of ${loc.units}`})
           </span>
+          {!loc.isOverstock && (
+            <span className="text-[#ffce75] text-[10px] font-medium" title="This is a pick location - consider restocking overstock first">
+              ⚠️ pick
+            </span>
+          )}
         </div>
       ))}
     </div>

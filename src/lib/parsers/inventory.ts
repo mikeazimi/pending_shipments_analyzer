@@ -119,12 +119,17 @@ export interface SourceLocationResult {
   location: string
   units: number
   unitsToTake: number
+  isOverstock: boolean // true = overstock (pickable=no), false = pick location (pickable=yes)
 }
 
 /**
  * Find the best source locations to pull inventory from for a given SKU.
- * Prefers single locations with enough units, otherwise combines multiple.
- * Locations are sorted by units descending (largest first).
+ * 
+ * Priority order:
+ * 1. Overstock locations (sellable=yes, pickable=no) - don't steal from pick area
+ * 2. Pick locations (sellable=yes, pickable=yes) - only if overstock insufficient
+ * 
+ * Within each priority, prefers larger quantities first.
  */
 export function findSourceLocations(
   inventoryMap: Map<string, SkuInventory>,
@@ -136,34 +141,57 @@ export function findSourceLocations(
     return []
   }
 
-  // Sort locations by units descending (prefer larger quantities first)
-  const sortedLocations = [...inventory.locations].sort((a, b) => b.units - a.units)
+  // Separate overstock (pickable=no) from pick locations (pickable=yes)
+  const overstockLocations = inventory.locations
+    .filter(loc => !loc.pickable && loc.units > 0)
+    .sort((a, b) => b.units - a.units)
   
-  // First, try to find a single location with enough units
-  const singleLocation = sortedLocations.find(loc => loc.units >= unitsNeeded)
-  if (singleLocation) {
-    return [{
-      location: singleLocation.location,
-      units: singleLocation.units,
-      unitsToTake: unitsNeeded,
-    }]
-  }
+  const pickLocations = inventory.locations
+    .filter(loc => loc.pickable && loc.units > 0)
+    .sort((a, b) => b.units - a.units)
   
-  // Otherwise, combine multiple locations
   const sourceLocations: SourceLocationResult[] = []
   let remaining = unitsNeeded
   
-  for (const loc of sortedLocations) {
+  // First, try to fulfill entirely from overstock
+  const singleOverstock = overstockLocations.find(loc => loc.units >= unitsNeeded)
+  if (singleOverstock) {
+    return [{
+      location: singleOverstock.location,
+      units: singleOverstock.units,
+      unitsToTake: unitsNeeded,
+      isOverstock: true,
+    }]
+  }
+  
+  // Use overstock locations first (priority)
+  for (const loc of overstockLocations) {
     if (remaining <= 0) break
-    if (loc.units <= 0) continue
     
     const toTake = Math.min(loc.units, remaining)
     sourceLocations.push({
       location: loc.location,
       units: loc.units,
       unitsToTake: toTake,
+      isOverstock: true,
     })
     remaining -= toTake
+  }
+  
+  // If still need more, use pick locations
+  if (remaining > 0) {
+    for (const loc of pickLocations) {
+      if (remaining <= 0) break
+      
+      const toTake = Math.min(loc.units, remaining)
+      sourceLocations.push({
+        location: loc.location,
+        units: loc.units,
+        unitsToTake: toTake,
+        isOverstock: false,
+      })
+      remaining -= toTake
+    }
   }
   
   return sourceLocations
