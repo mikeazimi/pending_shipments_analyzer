@@ -23,11 +23,11 @@ export function FilterToggles({
           id="exclude-allocated"
           checked={excludeAllocated}
           onCheckedChange={(checked) => onExcludeAllocatedChange(checked as boolean)}
-          className="border-slate-500 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
+          className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
         />
         <Label
           htmlFor="exclude-allocated"
-          className="text-sm text-slate-300 cursor-pointer"
+          className="text-sm text-[#263444] cursor-pointer"
         >
           Exclude orders with allocated locations
         </Label>
@@ -38,11 +38,11 @@ export function FilterToggles({
           id="exclude-toted"
           checked={excludeToted}
           onCheckedChange={(checked) => onExcludeTotedChange(checked as boolean)}
-          className="border-slate-500 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
+          className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
         />
         <Label
           htmlFor="exclude-toted"
-          className="text-sm text-slate-300 cursor-pointer"
+          className="text-sm text-[#263444] cursor-pointer"
         >
           Exclude orders with totes assigned
         </Label>

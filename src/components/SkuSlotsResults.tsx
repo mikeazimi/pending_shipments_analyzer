@@ -55,12 +55,12 @@ function OrdersDialog({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-auto bg-slate-900 border-slate-700">
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-auto bg-white border-[#e2e8f0]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-white">{title}</DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogTitle className="text-[#000000]">{title}</DialogTitle>
+              <DialogDescription className="text-[#6b7a8c]">
                 {orders.length} order{orders.length !== 1 ? 's' : ''}
               </DialogDescription>
             </div>
@@ -68,9 +68,9 @@ function OrdersDialog({
               variant="outline" 
               size="sm" 
               onClick={copyToClipboard}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa]"
             >
-              {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
+              {copied ? <Check className="w-4 h-4 mr-1 text-[#6de5a2]" /> : <Copy className="w-4 h-4 mr-1" />}
               {copied ? 'Copied!' : 'Copy All'}
             </Button>
           </div>
@@ -79,7 +79,7 @@ function OrdersDialog({
           {orders.map((order) => (
             <div
               key={order}
-              className="px-3 py-2 bg-slate-800 rounded text-sm text-slate-300 font-mono"
+              className="px-3 py-2 bg-[#f4f7fa] rounded text-sm text-[#263444] font-mono"
             >
               {order}
             </div>
@@ -109,14 +109,14 @@ function SortableHeader({
   
   return (
     <TableHead 
-      className={`text-slate-300 cursor-pointer select-none hover:text-white hover:bg-slate-800/50 transition-colors ${align === 'right' ? 'text-right' : ''}`}
+      className={`text-[#6b7a8c] text-xs font-medium uppercase tracking-wider cursor-pointer select-none hover:text-[#000000] hover:bg-[#f4f7fa] transition-colors ${align === 'right' ? 'text-right' : ''}`}
       onDoubleClick={() => onSort(field)}
       title="Double-click to sort"
     >
       <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
         {label}
         {isActive ? (
-          currentDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+          currentDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-[#3281fd]" /> : <ArrowDown className="w-3 h-3 text-[#3281fd]" />
         ) : (
           <ArrowUpDown className="w-3 h-3 opacity-30" />
         )}
@@ -161,7 +161,6 @@ function SkuTable({
   const filteredAndSortedSkus = useMemo(() => {
     let result = [...skus]
     
-    // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       result = result.filter(sku => 
@@ -170,7 +169,6 @@ function SkuTable({
       )
     }
     
-    // Sort
     if (sortField) {
       result.sort((a, b) => {
         let aVal = a[sortField]
@@ -194,39 +192,39 @@ function SkuTable({
 
   if (skus.length === 0) {
     return (
-      <Card className="bg-slate-800/30 border-slate-700">
+      <Card className="bg-white border-[#e2e8f0] shadow-sm">
         <CardHeader>
-          <CardTitle className="text-white">{title}</CardTitle>
-          <CardDescription className="text-slate-400">{description}</CardDescription>
+          <CardTitle className="text-[#000000] text-base">{title}</CardTitle>
+          <CardDescription className="text-[#6b7a8c]">{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-500 text-center py-8">No SKUs in this category</p>
+          <p className="text-[#c0ccdb] text-center py-8">No SKUs in this category</p>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="bg-slate-800/30 border-slate-700">
-      <CardHeader>
+    <Card className="bg-white border-[#e2e8f0] shadow-sm">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-[#000000] text-base flex items-center gap-2">
               {isReceivingPriority ? (
-                <Clock className="w-5 h-5 text-amber-400" />
+                <Clock className="w-5 h-5 text-[#ffce75]" />
               ) : (
-                <Truck className="w-5 h-5 text-emerald-400" />
+                <Truck className="w-5 h-5 text-[#3281fd]" />
               )}
               {title}
             </CardTitle>
-            <CardDescription className="text-slate-400">{description}</CardDescription>
+            <CardDescription className="text-[#6b7a8c] text-sm">{description}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge 
               variant="outline" 
               className={isReceivingPriority 
-                ? "border-amber-500/50 text-amber-400" 
-                : "border-emerald-500/50 text-emerald-400"
+                ? "border-[#ffce75] text-[#b38f52] bg-[#ffce75]/10" 
+                : "border-[#3281fd] text-[#3281fd] bg-[#3281fd]/10"
               }
             >
               {filteredAndSortedSkus.length} SKU{filteredAndSortedSkus.length !== 1 ? 's' : ''}
@@ -235,78 +233,77 @@ function SkuTable({
               variant="outline"
               size="sm"
               onClick={copySkuList}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa]"
             >
-              {copiedSku === 'all' ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
+              {copiedSku === 'all' ? <Check className="w-4 h-4 mr-1 text-[#6de5a2]" /> : <Copy className="w-4 h-4 mr-1" />}
               {copiedSku === 'all' ? 'Copied!' : 'Copy SKUs'}
             </Button>
           </div>
         </div>
         
-        {/* Search */}
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0ccdb]" />
           <Input
             placeholder="Search SKU or product name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+            className="pl-9 bg-white border-[#e2e8f0] text-[#000000] placeholder:text-[#c0ccdb] focus:border-[#3281fd]"
           />
         </div>
         
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-[#c0ccdb] mt-2">
           💡 Double-click column headers to sort
         </p>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
+      <CardContent className="pt-0">
+        <div className="overflow-x-auto border border-[#e2e8f0] rounded-lg">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700 hover:bg-transparent">
-                <TableHead className="text-slate-300 w-10">#</TableHead>
+              <TableRow className="bg-[#f4f7fa] border-b border-[#e2e8f0] hover:bg-[#f4f7fa]">
+                <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider w-12">#</TableHead>
                 <SortableHeader label="SKU" field="sku" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} />
                 <SortableHeader label="Product Name" field="productName" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                <SortableHeader label="Orders Impacted" field="ordersImpacted" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
-                <SortableHeader label="Units Needed" field="totalUnitsNeeded" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
-                <SortableHeader label="Inventory" field="currentInventory" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
+                <SortableHeader label="Orders" field="ordersImpacted" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
+                <SortableHeader label="Units" field="totalUnitsNeeded" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
+                <SortableHeader label="Stock" field="currentInventory" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
                 <SortableHeader 
-                  label={isReceivingPriority ? 'Orders Blocked' : 'Orders Unlocked'} 
+                  label={isReceivingPriority ? 'Blocked' : 'Unlocked'} 
                   field="incrementalOrdersUnlocked" 
                   currentSort={sortField} 
                   currentDirection={sortDirection} 
                   onSort={handleSort} 
                   align="right" 
                 />
-                <TableHead className="text-slate-300 print:hidden"></TableHead>
+                <TableHead className="text-[#6b7a8c] print:hidden w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displaySkus.map((sku, index) => (
-                <TableRow key={sku.sku} className="border-slate-700/50 hover:bg-slate-800/50">
-                  <TableCell className="text-slate-500 font-mono">{index + 1}</TableCell>
-                  <TableCell className="font-mono text-white">{sku.sku}</TableCell>
-                  <TableCell className="text-slate-300 max-w-[200px] truncate" title={sku.productName}>
+                <TableRow key={sku.sku} className="border-b border-[#e2e8f0] hover:bg-[#f4f7fa]">
+                  <TableCell className="text-[#c0ccdb] font-mono text-sm">{index + 1}</TableCell>
+                  <TableCell className="font-mono text-[#000000] text-sm">{sku.sku}</TableCell>
+                  <TableCell className="text-[#263444] text-sm max-w-[200px] truncate" title={sku.productName}>
                     {sku.productName}
                   </TableCell>
-                  <TableCell className="text-right text-slate-300">
+                  <TableCell className="text-right text-[#263444] text-sm">
                     {sku.ordersImpacted}
                   </TableCell>
-                  <TableCell className="text-right text-slate-300">
+                  <TableCell className="text-right text-[#263444] text-sm">
                     {sku.totalUnitsNeeded}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right text-sm">
                     {sku.currentInventory > 0 ? (
-                      <span className="text-emerald-400">{sku.currentInventory}</span>
+                      <span className="text-[#6de5a2] font-medium">{sku.currentInventory}</span>
                     ) : (
-                      <span className="text-red-400">0</span>
+                      <span className="text-[#ef5252]">0</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge
                       variant="outline"
                       className={isReceivingPriority 
-                        ? "border-amber-500/50 text-amber-400"
-                        : "border-purple-500/50 text-purple-400"
+                        ? "border-[#ffce75] text-[#b38f52] bg-[#ffce75]/10"
+                        : "border-[#6de5a2] text-[#4db87a] bg-[#6de5a2]/10"
                       }
                     >
                       {sku.incrementalOrdersUnlocked}
@@ -318,7 +315,7 @@ function SkuTable({
                         orders={sku.ordersFulfilled}
                         title={`Orders fulfilled by ${sku.sku}`}
                         trigger={
-                          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                          <Button variant="ghost" size="sm" className="text-[#c0ccdb] hover:text-[#3281fd] hover:bg-[#3281fd]/10">
                             <Eye className="w-4 h-4" />
                           </Button>
                         }
@@ -336,7 +333,7 @@ function SkuTable({
             <Button
               variant="outline"
               onClick={() => setShowAll(!showAll)}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa]"
             >
               {showAll ? 'Show Less' : `Show All ${filteredAndSortedSkus.length} SKUs`}
             </Button>
@@ -351,60 +348,60 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
   const [showReceivingSection, setShowReceivingSection] = useState(true)
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Stats */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border-purple-500/30">
+        <Card className="bg-white border-[#e2e8f0] shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
-                <Boxes className="w-5 h-5 text-purple-400" />
+              <div className="p-2 bg-[#3281fd]/10 rounded-lg">
+                <Boxes className="w-5 h-5 text-[#3281fd]" />
               </div>
               <div>
-                <p className="text-xs text-purple-300 uppercase tracking-wider">SKU Slots</p>
-                <p className="text-2xl font-bold text-white">{results.skuSlotCount}</p>
+                <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium">SKU Slots</p>
+                <p className="text-2xl font-bold text-[#000000]">{results.skuSlotCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/30">
+        <Card className="bg-white border-[#e2e8f0] shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <div className="p-2 bg-[#6de5a2]/10 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-[#6de5a2]" />
               </div>
               <div>
-                <p className="text-xs text-emerald-300 uppercase tracking-wider">Orders Fulfilled</p>
-                <p className="text-2xl font-bold text-white">{results.totalOrdersFulfilled}</p>
+                <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium">Orders Fulfilled</p>
+                <p className="text-2xl font-bold text-[#000000]">{results.totalOrdersFulfilled}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border-cyan-500/30">
+        <Card className="bg-white border-[#e2e8f0] shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-500/20 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-cyan-400" />
+              <div className="p-2 bg-[#3281fd]/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-[#3281fd]" />
               </div>
               <div>
-                <p className="text-xs text-cyan-300 uppercase tracking-wider">Fulfillment Rate</p>
-                <p className="text-2xl font-bold text-white">{results.fulfillmentRate.toFixed(1)}%</p>
+                <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium">Fulfillment Rate</p>
+                <p className="text-2xl font-bold text-[#000000]">{results.fulfillmentRate.toFixed(1)}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-amber-500/30">
+        <Card className="bg-white border-[#e2e8f0] shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/20 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <div className="p-2 bg-[#ffce75]/10 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#ffce75]" />
               </div>
               <div>
-                <p className="text-xs text-amber-300 uppercase tracking-wider">Need Receiving</p>
-                <p className="text-2xl font-bold text-white">{results.skusToPrioritizeReceiving.length}</p>
+                <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium">Need Receiving</p>
+                <p className="text-2xl font-bold text-[#000000]">{results.skusToPrioritizeReceiving.length}</p>
               </div>
             </div>
           </CardContent>
@@ -413,15 +410,15 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
 
       {/* Orders Fulfilled Preview */}
       {results.ordersFulfilled.length > 0 && (
-        <Card className="bg-slate-800/30 border-slate-700">
+        <Card className="bg-white border-[#e2e8f0] shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Package className="w-5 h-5 text-emerald-400" />
+                <CardTitle className="text-[#000000] text-base flex items-center gap-2">
+                  <Package className="w-5 h-5 text-[#6de5a2]" />
                   Orders That Can Be Completely Fulfilled
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-[#6b7a8c] text-sm">
                   These orders have all required SKUs within your {results.skuSlotCount} slot allocation
                 </CardDescription>
               </div>
@@ -429,9 +426,9 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
                 orders={results.ordersFulfilled}
                 title="All Fulfillable Orders"
                 trigger={
-                  <Button variant="outline" className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10">
+                  <Button variant="outline" className="border-[#6de5a2] text-[#4db87a] hover:bg-[#6de5a2]/10">
                     <Eye className="w-4 h-4 mr-2" />
-                    View All {results.ordersFulfilled.length} Orders
+                    View All {results.ordersFulfilled.length}
                   </Button>
                 }
               />
@@ -443,13 +440,13 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
                 <Badge
                   key={order}
                   variant="outline"
-                  className="border-emerald-500/30 text-emerald-400 font-mono"
+                  className="border-[#e2e8f0] text-[#263444] font-mono bg-[#f4f7fa]"
                 >
                   {order}
                 </Badge>
               ))}
               {results.ordersFulfilled.length > 20 && (
-                <Badge variant="outline" className="border-slate-600 text-slate-400">
+                <Badge variant="outline" className="border-[#e2e8f0] text-[#6b7a8c]">
                   +{results.ordersFulfilled.length - 20} more
                 </Badge>
               )}
@@ -461,8 +458,8 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
       {/* SKUs to Stock Table */}
       <SkuTable
         skus={results.skusToStock}
-        title={`SKUs to Stock in Pick Area (${results.skusToStock.length}/${results.skuSlotCount} slots used)`}
-        description="These SKUs should be moved to your pick area to maximize order fulfillment."
+        title={`SKUs to Stock (${results.skusToStock.length}/${results.skuSlotCount} slots)`}
+        description="Move these SKUs to your pick area to maximize order fulfillment."
         isReceivingPriority={false}
       />
 
@@ -473,8 +470,9 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
             id="showReceiving" 
             checked={showReceivingSection}
             onCheckedChange={(checked) => setShowReceivingSection(checked === true)}
+            className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
           />
-          <Label htmlFor="showReceiving" className="text-slate-300 cursor-pointer">
+          <Label htmlFor="showReceiving" className="text-[#6b7a8c] cursor-pointer text-sm">
             Show SKUs Awaiting Inventory ({results.skusToPrioritizeReceiving.length} SKUs)
           </Label>
         </div>
@@ -484,8 +482,8 @@ export function SkuSlotsResults({ results }: SkuSlotsResultsProps) {
       {showReceivingSection && results.skusToPrioritizeReceiving.length > 0 && (
         <SkuTable
           skus={results.skusToPrioritizeReceiving}
-          title="High-Impact SKUs Awaiting Inventory"
-          description="These SKUs have no sellable inventory but would unlock orders if received. Prioritize these during receiving."
+          title="SKUs Awaiting Inventory"
+          description="These SKUs have no sellable inventory but would unlock orders if received."
           isReceivingPriority={true}
         />
       )}

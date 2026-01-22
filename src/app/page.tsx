@@ -16,7 +16,7 @@ import {
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
 import { findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
 import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SkuSlotsOutput } from '@/lib/parsers/types'
-import { Package, Boxes, Settings2, Play, LogOut } from 'lucide-react'
+import { Package, Boxes, Play, LogOut } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SkuSlotsResults } from '@/components/SkuSlotsResults'
@@ -155,25 +155,25 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-[#f4f7fa]">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50 print:hidden">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-white border-b border-[#e2e8f0] sticky top-0 z-50 print:hidden">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 bg-[#ef5252] rounded-lg flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">ShipHero Analyzer</h1>
-                <p className="text-xs text-slate-400">SKU Priority Analysis</p>
+                <h1 className="text-lg font-semibold text-[#000000]">SKU Analyzer</h1>
+                <p className="text-xs text-[#6b7a8c]">Optimize your pick area</p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/login')}
-              className="text-slate-400 hover:text-white"
+              className="text-[#6b7a8c] hover:text-[#000000] hover:bg-[#f4f7fa]"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -182,23 +182,22 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-[350px_1fr] gap-8">
+      <main className="container mx-auto px-6 py-6">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-6">
           {/* Sidebar - Configuration */}
-          <aside className="space-y-6 print:hidden">
-            <Card className="bg-slate-800/30 border-slate-700">
+          <aside className="space-y-4 print:hidden">
+            <Card className="bg-white border-[#e2e8f0] shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Settings2 className="w-5 h-5 text-slate-400" />
+                <CardTitle className="text-[#000000] text-base font-semibold">
                   Configuration
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-5">
                 {/* File Uploads */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <FileUpload
                     title="Pending Shipments"
-                    description="Upload ShipHero pending shipments report"
+                    description="Upload pending shipments CSV"
                     accept=".csv"
                     onFileSelect={handlePendingShipmentsUpload}
                     isLoading={isLoading}
@@ -214,7 +213,7 @@ export default function DashboardPage() {
 
                   <FileUpload
                     title="Inventory Report"
-                    description="Upload item locations report"
+                    description="Upload item locations CSV"
                     accept=".csv"
                     onFileSelect={handleInventoryUpload}
                     isLoading={isLoading}
@@ -228,15 +227,15 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                <Separator className="bg-slate-700" />
+                <Separator className="bg-[#e2e8f0]" />
 
                 {/* Filters */}
                 {availableStatuses.length > 0 && (
                   <>
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-slate-300">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[#263444]">
                         Filter by Status
-                      </label>
+                      </Label>
                       <StatusFilter
                         statuses={availableStatuses}
                         selectedStatuses={selectedStatuses}
@@ -251,15 +250,15 @@ export default function DashboardPage() {
                       onExcludeTotedChange={setExcludeToted}
                     />
 
-                    <Separator className="bg-slate-700" />
+                    <Separator className="bg-[#e2e8f0]" />
                   </>
                 )}
 
                 {/* SKU Slots Configuration */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Boxes className="w-4 h-4 text-purple-400" />
-                    <Label className="text-sm font-medium text-slate-300">
+                    <Boxes className="w-4 h-4 text-[#3281fd]" />
+                    <Label className="text-sm font-medium text-[#263444]">
                       SKU Slots in Pick Area
                     </Label>
                   </div>
@@ -270,21 +269,21 @@ export default function DashboardPage() {
                     value={skuSlotCount}
                     onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
                     placeholder="50"
-                    className="bg-slate-900/50 border-slate-600 text-white"
+                    className="bg-white border-[#e2e8f0] text-[#000000] focus:border-[#3281fd] focus:ring-[#3281fd]"
                   />
-                  <p className="text-xs text-slate-500">
-                    The analysis will find the optimal {skuSlotCount} SKUs to stock.
+                  <p className="text-xs text-[#6b7a8c]">
+                    Find the optimal {skuSlotCount} SKUs to stock
                   </p>
                 </div>
 
-                <Separator className="bg-slate-700" />
+                <Separator className="bg-[#e2e8f0]" />
 
                 {/* Actions */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Button
                     onClick={runAnalysis}
                     disabled={allOrders.length === 0 || !inventoryMap || isLoading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="w-full bg-[#3281fd] hover:bg-[#2570e8] text-white font-medium"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Run Analysis
@@ -294,7 +293,7 @@ export default function DashboardPage() {
                     <Button
                       variant="outline"
                       onClick={clearAll}
-                      className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+                      className="w-full border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa] hover:text-[#000000]"
                     >
                       Clear All
                     </Button>
@@ -303,24 +302,24 @@ export default function DashboardPage() {
 
                 {/* Stats Preview */}
                 {allOrders.length > 0 && (
-                  <div className="p-4 bg-slate-900/50 rounded-lg space-y-2">
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Data Loaded</p>
+                  <div className="p-3 bg-[#f4f7fa] rounded-lg space-y-2">
+                    <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium">Data Loaded</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-slate-400">Line Items</p>
-                        <p className="text-white font-medium">{pendingRows.length.toLocaleString()}</p>
+                        <p className="text-[#6b7a8c] text-xs">Line Items</p>
+                        <p className="text-[#000000] font-medium">{pendingRows.length.toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400">Orders</p>
-                        <p className="text-white font-medium">{allOrders.length.toLocaleString()}</p>
+                        <p className="text-[#6b7a8c] text-xs">Orders</p>
+                        <p className="text-[#000000] font-medium">{allOrders.length.toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400">Statuses</p>
-                        <p className="text-white font-medium">{availableStatuses.length}</p>
+                        <p className="text-[#6b7a8c] text-xs">Statuses</p>
+                        <p className="text-[#000000] font-medium">{availableStatuses.length}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400">Inventory SKUs</p>
-                        <p className="text-white font-medium">{inventoryMap?.size.toLocaleString() ?? 'N/A'}</p>
+                        <p className="text-[#6b7a8c] text-xs">Inventory SKUs</p>
+                        <p className="text-[#000000] font-medium">{inventoryMap?.size.toLocaleString() ?? 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -330,15 +329,17 @@ export default function DashboardPage() {
           </aside>
 
           {/* Main Content - Results */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {!analysisResults ? (
-              <Card className="bg-slate-800/30 border-slate-700">
+              <Card className="bg-white border-[#e2e8f0] shadow-sm">
                 <CardContent className="py-16 text-center">
-                  <Boxes className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold text-white mb-2">
+                  <div className="w-16 h-16 bg-[#f4f7fa] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Boxes className="w-8 h-8 text-[#c0ccdb]" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-[#000000] mb-2">
                     Ready to Analyze
                   </h2>
-                  <p className="text-slate-400 max-w-md mx-auto">
+                  <p className="text-[#6b7a8c] max-w-md mx-auto text-sm">
                     Upload your pending shipments and inventory reports, set your SKU slot count,
                     then click &quot;Run Analysis&quot; to find the optimal SKUs for your pick area.
                   </p>
@@ -347,8 +348,11 @@ export default function DashboardPage() {
             ) : (
               <>
                 <div className="flex justify-between items-center print:hidden">
-                  <h2 className="text-lg font-semibold text-white">
-                    Optimal {analysisResults.skuSlotCount} SKUs ({totalOrdersAnalyzed.toLocaleString()} orders analyzed)
+                  <h2 className="text-base font-semibold text-[#000000]">
+                    Optimal {analysisResults.skuSlotCount} SKUs
+                    <span className="text-[#6b7a8c] font-normal ml-2">
+                      ({totalOrdersAnalyzed.toLocaleString()} orders analyzed)
+                    </span>
                   </h2>
                   <ExportButtons analysisResults={analysisResults} />
                 </div>

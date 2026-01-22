@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Lock } from 'lucide-react'
+import { Package } from 'lucide-react'
 
 export default function LoginPage() {
   const [password, setPassword] = useState('')
@@ -43,40 +43,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-      <Card className="w-full max-w-md bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center bg-[#f4f7fa] p-4">
+      <Card className="w-full max-w-md bg-white border-[#e2e8f0] shadow-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
-            <Lock className="w-6 h-6 text-emerald-400" />
+          <div className="mx-auto mb-4 w-14 h-14 bg-[#ef5252] rounded-xl flex items-center justify-center">
+            <Package className="w-7 h-7 text-white" />
           </div>
-          <CardTitle className="text-2xl text-white">ShipHero Analyzer</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-2xl text-[#000000]">SKU Analyzer</CardTitle>
+          <CardDescription className="text-[#6b7a8c]">
             Enter the team password to continue
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Password</Label>
+              <Label htmlFor="password" className="text-[#263444]">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                className="bg-white border-[#e2e8f0] text-[#000000] placeholder:text-[#c0ccdb] focus:border-[#3281fd] focus:ring-[#3281fd]/20"
                 required
               />
             </div>
             {error && (
-              <p className="text-sm text-red-400 bg-red-400/10 px-3 py-2 rounded-md">
+              <p className="text-sm text-[#ef5252] bg-[#ef5252]/10 px-3 py-2 rounded-md">
                 {error}
               </p>
             )}
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="w-full bg-[#3281fd] hover:bg-[#2570e8] text-white font-medium"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>

@@ -97,16 +97,16 @@ export function ExportButtons({ analysisResults }: ExportButtonsProps) {
         variant="outline"
         size="sm"
         onClick={handleExportCSV}
-        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+        className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa] hover:text-[#3281fd] hover:border-[#3281fd]"
       >
         <Download className="w-4 h-4 mr-2" />
-        Export CSV
+        Export
       </Button>
       <Button
         variant="outline"
         size="sm"
         onClick={handlePrint}
-        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+        className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa] hover:text-[#3281fd] hover:border-[#3281fd]"
       >
         <Printer className="w-4 h-4 mr-2" />
         Print

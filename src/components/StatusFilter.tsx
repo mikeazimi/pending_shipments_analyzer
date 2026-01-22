@@ -48,7 +48,7 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
       <Button
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full justify-between bg-slate-800/50 border-slate-600 text-slate-200 hover:bg-slate-700/50 hover:text-white"
+        className="w-full justify-between bg-white border-[#e2e8f0] text-[#263444] hover:bg-[#f4f7fa] hover:border-[#3281fd]"
       >
         <span className="truncate">
           {selectedStatuses.length === 0
@@ -56,18 +56,18 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
             : `${selectedStatuses.length} selected`}
         </span>
         <ChevronDown
-          className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 ml-2 transition-transform text-[#6b7a8c] ${isOpen ? 'rotate-180' : ''}`}
         />
       </Button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl">
-          <div className="p-2 border-b border-slate-700 flex justify-between">
+        <div className="absolute z-50 mt-2 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-lg">
+          <div className="p-2 border-b border-[#e2e8f0] flex justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={selectAll}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-[#3281fd] hover:text-[#2570e8] hover:bg-[#3281fd]/10"
             >
               Select All
             </Button>
@@ -75,7 +75,7 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
               variant="ghost"
               size="sm"
               onClick={clearAll}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-[#6b7a8c] hover:text-[#ef5252] hover:bg-[#ef5252]/10"
             >
               Clear All
             </Button>
@@ -84,16 +84,16 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
             {statuses.map(status => (
               <label
                 key={status}
-                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-700/50 cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#f4f7fa] cursor-pointer"
               >
                 <Checkbox
                   checked={selectedStatuses.includes(status)}
                   onCheckedChange={() => toggleStatus(status)}
-                  className="border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                  className="border-[#c0ccdb] data-[state=checked]:bg-[#3281fd] data-[state=checked]:border-[#3281fd]"
                 />
-                <span className="text-sm text-slate-200 truncate">{status}</span>
+                <span className="text-sm text-[#263444] truncate">{status}</span>
                 {selectedStatuses.includes(status) && (
-                  <Check className="w-4 h-4 text-emerald-400 ml-auto" />
+                  <Check className="w-4 h-4 text-[#3281fd] ml-auto" />
                 )}
               </label>
             ))}
@@ -107,12 +107,12 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
             <Badge
               key={status}
               variant="secondary"
-              className="bg-emerald-900/50 text-emerald-300 border-emerald-800 text-xs"
+              className="bg-[#3281fd]/10 text-[#3281fd] border border-[#3281fd]/30 text-xs"
             >
               {status.length > 15 ? status.slice(0, 15) + '...' : status}
               <button
                 onClick={() => toggleStatus(status)}
-                className="ml-1 hover:text-emerald-100"
+                className="ml-1 hover:text-[#ef5252]"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -121,7 +121,7 @@ export function StatusFilter({ statuses, selectedStatuses, onChange }: StatusFil
           {selectedStatuses.length > 3 && (
             <Badge
               variant="secondary"
-              className="bg-slate-700 text-slate-300 text-xs"
+              className="bg-[#f4f7fa] text-[#6b7a8c] border border-[#e2e8f0] text-xs"
             >
               +{selectedStatuses.length - 3} more
             </Badge>
