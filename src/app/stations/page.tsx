@@ -342,8 +342,15 @@ export default function StationsPage() {
                           type="number"
                           min={1}
                           max={500}
-                          value={station.skuSlots}
-                          onChange={(e) => updateStation(station.id, 'skuSlots', parseInt(e.target.value) || 50)}
+                          value={station.skuSlots || ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            updateStation(station.id, 'skuSlots', val === '' ? 0 : parseInt(val))
+                          }}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value)
+                            if (!val || val < 1) updateStation(station.id, 'skuSlots', 50)
+                          }}
                           className="h-7 w-16 text-sm bg-white border-[#e2e8f0] text-center"
                         />
                         <span className="text-xs text-[#6b7a8c]">slots</span>

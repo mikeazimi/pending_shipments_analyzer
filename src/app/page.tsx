@@ -286,8 +286,15 @@ export default function DashboardPage() {
                     type="number"
                     min={1}
                     max={500}
-                    value={skuSlotCount}
-                    onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
+                    value={skuSlotCount || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setSkuSlotCount(val === '' ? 0 : parseInt(val))
+                    }}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value)
+                      if (!val || val < 1) setSkuSlotCount(50)
+                    }}
                     placeholder="50"
                     className="bg-white border-[#e2e8f0] text-[#000000] focus:border-[#3281fd] focus:ring-[#3281fd]"
                   />
