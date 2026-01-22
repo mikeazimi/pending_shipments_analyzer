@@ -5,12 +5,8 @@ import { toast } from 'sonner'
 import { FileUpload } from '@/components/FileUpload'
 import { StatusFilter } from '@/components/StatusFilter'
 import { FilterToggles } from '@/components/FilterToggles'
-import { AnalysisResults } from '@/components/AnalysisResults'
-import { SkuBarChart, TierPieChart } from '@/components/SkuChart'
-import { SummaryCards } from '@/components/SummaryCards'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import {
   parsePendingShipmentsCSV,
@@ -18,14 +14,13 @@ import {
   filterOrders,
 } from '@/lib/parsers/pending-shipments'
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
-import { runFullAnalysis, findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
-import type { Order, SkuInventory, AnalysisOutput, PendingShipmentRow, InventoryRow } from '@/lib/parsers/types'
-import { Package, BarChart3, Settings2, Play, LogOut, History, Boxes } from 'lucide-react'
+import { findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
+import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SkuSlotsOutput } from '@/lib/parsers/types'
+import { Package, Boxes, Settings2, Play, LogOut } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SkuSlotsResults } from '@/components/SkuSlotsResults'
 import { ExportButtons } from '@/components/ExportButtons'
-import Link from 'next/link'
 
 export default function DashboardPage() {
   // File upload state
@@ -49,7 +44,8 @@ export default function DashboardPage() {
   const [skuSlotCount, setSkuSlotCount] = useState<number>(50)
 
   // Analysis results
-  const [analysisOutput, setAnalysisOutput] = useState<AnalysisOutput | null>(null)
+  const [analysisResults, setAnalysisResults] = useState<SkuSlotsOutput | null>(null)
+  const [totalOrdersAnalyzed, setTotalOrdersAnalyzed] = useState<number>(0)
 
   const handlePendingShipmentsUpload = useCallback(async (file: File) => {
     setIsLoading(true)
@@ -67,7 +63,7 @@ export default function DashboardPage() {
       setAllOrders(orders)
       setAvailableStatuses(statuses)
       setPendingShipmentsFile(file.name)
-      setAnalysisOutput(null)
+      setAnalysisResults(null)
 
       toast.success(`Loaded ${rows.length} line items from ${orders.length} orders`)
     } catch (error) {
@@ -93,7 +89,7 @@ export default function DashboardPage() {
       setInventoryRows(rows)
       setInventoryMap(invMap)
       setInventoryFile(file.name)
-      setAnalysisOutput(null)
+      setAnalysisResults(null)
 
       toast.success(`Loaded ${rows.length} inventory locations for ${invMap.size} SKUs`)
     } catch (error) {
@@ -110,6 +106,11 @@ export default function DashboardPage() {
       return
     }
 
+    if (!inventoryMap) {
+      toast.error('Please upload an inventory report to run the analysis')
+      return
+    }
+
     setIsLoading(true)
     try {
       const filteredOrders = filterOrders(
@@ -121,26 +122,17 @@ export default function DashboardPage() {
 
       if (filteredOrders.length === 0) {
         toast.warning('No orders match the current filters')
-        setAnalysisOutput(null)
+        setAnalysisResults(null)
         setIsLoading(false)
         return
       }
 
-      const output = runFullAnalysis(filteredOrders, inventoryMap)
-      
-      // Run SKU slots optimization if inventory is available
-      if (inventoryMap && skuSlotCount > 0) {
-        const skuSlotsResults = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount)
-        output.skuSlotsResults = skuSlotsResults
-      }
-      
-      setAnalysisOutput(output)
+      const results = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount)
+      setAnalysisResults(results)
+      setTotalOrdersAnalyzed(filteredOrders.length)
 
-      const slotsMsg = output.skuSlotsResults 
-        ? ` | ${output.skuSlotsResults.totalOrdersFulfilled} orders fulfillable with ${skuSlotCount} SKUs`
-        : ''
       toast.success(
-        `Analyzed ${output.summary.totalOrders} orders - ${output.summary.ordersReadyToFulfill} ready to fulfill${slotsMsg}`
+        `Found ${results.skusToStock.length} optimal SKUs - ${results.totalOrdersFulfilled} orders fulfillable (${results.fulfillmentRate.toFixed(1)}%)`
       )
     } catch (error) {
       console.error('Analysis failed:', error)
@@ -159,13 +151,13 @@ export default function DashboardPage() {
     setAvailableStatuses([])
     setInventoryMap(null)
     setSelectedStatuses([])
-    setAnalysisOutput(null)
+    setAnalysisResults(null)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -177,27 +169,15 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-400">SKU Priority Analysis</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/history">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-slate-400 hover:text-white"
-                >
-                  <History className="w-4 h-4 mr-2" />
-                  History
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/login')}
-                className="text-slate-400 hover:text-white"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/login')}
+              className="text-slate-400 hover:text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
@@ -205,7 +185,7 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-[350px_1fr] gap-8">
           {/* Sidebar - Configuration */}
-          <aside className="space-y-6">
+          <aside className="space-y-6 print:hidden">
             <Card className="bg-slate-800/30 border-slate-700">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white flex items-center gap-2">
@@ -228,13 +208,13 @@ export default function DashboardPage() {
                       setPendingRows([])
                       setAllOrders([])
                       setAvailableStatuses([])
-                      setAnalysisOutput(null)
+                      setAnalysisResults(null)
                     }}
                   />
 
                   <FileUpload
                     title="Inventory Report"
-                    description="Upload item locations report (optional)"
+                    description="Upload item locations report"
                     accept=".csv"
                     onFileSelect={handleInventoryUpload}
                     isLoading={isLoading}
@@ -243,7 +223,7 @@ export default function DashboardPage() {
                       setInventoryFile(null)
                       setInventoryRows([])
                       setInventoryMap(null)
-                      setAnalysisOutput(null)
+                      setAnalysisResults(null)
                     }}
                   />
                 </div>
@@ -272,43 +252,38 @@ export default function DashboardPage() {
                     />
 
                     <Separator className="bg-slate-700" />
-
-                    {/* SKU Slots Configuration */}
-                    {inventoryMap && (
-                      <>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Boxes className="w-4 h-4 text-purple-400" />
-                            <Label className="text-sm font-medium text-slate-300">
-                              SKU Slots in Pick Area
-                            </Label>
-                          </div>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={500}
-                            value={skuSlotCount}
-                            onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
-                            placeholder="50"
-                            className="bg-slate-900/50 border-slate-600 text-white"
-                          />
-                          <p className="text-xs text-slate-500">
-                            Enter the number of SKU slots available in your pick area. 
-                            The analysis will find the optimal {skuSlotCount} SKUs to stock.
-                          </p>
-                        </div>
-
-                        <Separator className="bg-slate-700" />
-                      </>
-                    )}
                   </>
                 )}
+
+                {/* SKU Slots Configuration */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Boxes className="w-4 h-4 text-purple-400" />
+                    <Label className="text-sm font-medium text-slate-300">
+                      SKU Slots in Pick Area
+                    </Label>
+                  </div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={skuSlotCount}
+                    onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
+                    placeholder="50"
+                    className="bg-slate-900/50 border-slate-600 text-white"
+                  />
+                  <p className="text-xs text-slate-500">
+                    The analysis will find the optimal {skuSlotCount} SKUs to stock.
+                  </p>
+                </div>
+
+                <Separator className="bg-slate-700" />
 
                 {/* Actions */}
                 <div className="space-y-3">
                   <Button
                     onClick={runAnalysis}
-                    disabled={allOrders.length === 0 || isLoading}
+                    disabled={allOrders.length === 0 || !inventoryMap || isLoading}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     <Play className="w-4 h-4 mr-2" />
@@ -356,98 +331,29 @@ export default function DashboardPage() {
 
           {/* Main Content - Results */}
           <div className="space-y-6">
-            {!analysisOutput ? (
+            {!analysisResults ? (
               <Card className="bg-slate-800/30 border-slate-700">
                 <CardContent className="py-16 text-center">
-                  <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                  <Boxes className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                   <h2 className="text-xl font-semibold text-white mb-2">
                     Ready to Analyze
                   </h2>
                   <p className="text-slate-400 max-w-md mx-auto">
-                    Upload your ShipHero pending shipments report and optionally an inventory report,
-                    then click &quot;Run Analysis&quot; to see which SKUs will unlock the most orders.
+                    Upload your pending shipments and inventory reports, set your SKU slot count,
+                    then click &quot;Run Analysis&quot; to find the optimal SKUs for your pick area.
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <div className="flex justify-between items-center" data-print-hidden="true">
-                  <h2 className="text-lg font-semibold text-white">Analysis Results</h2>
-                  <ExportButtons analysisOutput={analysisOutput} />
+                <div className="flex justify-between items-center print:hidden">
+                  <h2 className="text-lg font-semibold text-white">
+                    Optimal {analysisResults.skuSlotCount} SKUs ({totalOrdersAnalyzed.toLocaleString()} orders analyzed)
+                  </h2>
+                  <ExportButtons analysisResults={analysisResults} />
                 </div>
 
-                <SummaryCards summary={analysisOutput.summary} />
-
-                <div className="grid lg:grid-cols-2 gap-6">
-                  <SkuBarChart
-                    results={
-                      inventoryMap
-                        ? analysisOutput.inventoryConstrainedResults
-                        : analysisOutput.unconstrainedResults
-                    }
-                  />
-                  <TierPieChart
-                    results={
-                      inventoryMap
-                        ? analysisOutput.inventoryConstrainedResults
-                        : analysisOutput.unconstrainedResults
-                    }
-                  />
-                </div>
-
-                <Tabs defaultValue={analysisOutput.skuSlotsResults ? 'skuslots' : (inventoryMap ? 'constrained' : 'unconstrained')} className="space-y-4">
-                  <TabsList className="bg-slate-800/50 border border-slate-700">
-                    {analysisOutput.skuSlotsResults && (
-                      <TabsTrigger
-                        value="skuslots"
-                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-                      >
-                        <Boxes className="w-4 h-4 mr-1" />
-                        Optimal {skuSlotCount} SKUs
-                      </TabsTrigger>
-                    )}
-                    <TabsTrigger
-                      value="unconstrained"
-                      className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
-                    >
-                      Unconstrained View
-                    </TabsTrigger>
-                    {inventoryMap && (
-                      <TabsTrigger
-                        value="constrained"
-                        className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
-                      >
-                        Inventory Constrained
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {analysisOutput.skuSlotsResults && (
-                    <TabsContent value="skuslots">
-                      <SkuSlotsResults results={analysisOutput.skuSlotsResults} />
-                    </TabsContent>
-                  )}
-
-                  <TabsContent value="unconstrained">
-                    <AnalysisResults
-                      results={analysisOutput.unconstrainedResults}
-                      title="SKU Demand Ranking (All Orders)"
-                      description="SKUs ranked by how many orders they appear in - ignoring current inventory levels"
-                      showInventoryColumns={false}
-                    />
-                  </TabsContent>
-
-                  {inventoryMap && (
-                    <TabsContent value="constrained">
-                      <AnalysisResults
-                        results={analysisOutput.inventoryConstrainedResults}
-                        title="SKUs Blocking Order Fulfillment"
-                        description="SKUs that are preventing orders from being fulfilled due to insufficient inventory"
-                        showInventoryColumns={true}
-                      />
-                    </TabsContent>
-                  )}
-                </Tabs>
+                <SkuSlotsResults results={analysisResults} />
               </>
             )}
           </div>

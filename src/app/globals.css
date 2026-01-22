@@ -129,9 +129,11 @@
   body {
     background: white !important;
     color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
-  [data-print-hidden="true"] {
+  .print\:hidden {
     display: none !important;
   }
   
@@ -141,5 +143,64 @@
   
   header {
     display: none !important;
+  }
+  
+  main {
+    padding: 0 !important;
+  }
+  
+  /* Make cards print-friendly */
+  .bg-slate-800\/30,
+  .bg-gradient-to-br {
+    background: white !important;
+    border: 1px solid #ccc !important;
+  }
+  
+  /* Text colors for print */
+  .text-white,
+  .text-slate-300,
+  .text-slate-400,
+  .text-emerald-400,
+  .text-purple-400,
+  .text-amber-400,
+  .text-cyan-400 {
+    color: black !important;
+  }
+  
+  .text-emerald-300,
+  .text-purple-300,
+  .text-amber-300,
+  .text-cyan-300 {
+    color: #666 !important;
+  }
+  
+  /* Table styles for print */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 4px 8px !important;
+    color: black !important;
+  }
+  
+  /* Badge styles for print */
+  .border-emerald-500\/30,
+  .border-amber-500\/50,
+  .border-purple-500\/50,
+  .border-emerald-500\/50 {
+    border-color: #666 !important;
+  }
+  
+  /* Hide buttons in print */
+  button {
+    display: none !important;
+  }
+  
+  /* Page breaks */
+  .space-y-6 > * {
+    page-break-inside: avoid;
   }
 }
