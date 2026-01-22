@@ -16,8 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShipHero SKU Analyzer",
-  description: "Analyze ShipHero pending shipments to find which SKUs unlock the most orders",
+  title: "Pack to Light Analyzer",
+  description: "Analyze pending shipments to find the optimal SKUs for your pick area",
 };
 
 export default function RootLayout({

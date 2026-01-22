@@ -165,7 +165,7 @@ export default function DashboardPage() {
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-[#000000]">SKU Analyzer</h1>
+                <h1 className="text-lg font-semibold text-[#000000]">Pack to Light Analyzer</h1>
                 <p className="text-xs text-[#6b7a8c]">Optimize your pick area</p>
               </div>
             </div>

@@ -49,7 +49,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 w-14 h-14 bg-[#ef5252] rounded-xl flex items-center justify-center">
             <Package className="w-7 h-7 text-white" />
           </div>
-          <CardTitle className="text-2xl text-[#000000]">SKU Analyzer</CardTitle>
+          <CardTitle className="text-2xl text-[#000000]">Pack to Light Analyzer</CardTitle>
           <CardDescription className="text-[#6b7a8c]">
             Enter the team password to continue
           </CardDescription>
