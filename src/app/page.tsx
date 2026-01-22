@@ -148,7 +148,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap])
+  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, skuSlotCount])
 
   const clearAll = () => {
     setPendingShipmentsFile(null)
