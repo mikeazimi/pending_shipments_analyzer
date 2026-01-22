@@ -114,3 +114,57 @@ export function getInventoryForSku(
 ): number {
   return inventoryMap.get(sku)?.totalSellableUnits ?? 0
 }
+
+export interface SourceLocationResult {
+  location: string
+  units: number
+  unitsToTake: number
+}
+
+/**
+ * Find the best source locations to pull inventory from for a given SKU.
+ * Prefers single locations with enough units, otherwise combines multiple.
+ * Locations are sorted by units descending (largest first).
+ */
+export function findSourceLocations(
+  inventoryMap: Map<string, SkuInventory>,
+  sku: string,
+  unitsNeeded: number
+): SourceLocationResult[] {
+  const inventory = inventoryMap.get(sku)
+  if (!inventory || inventory.locations.length === 0 || unitsNeeded <= 0) {
+    return []
+  }
+
+  // Sort locations by units descending (prefer larger quantities first)
+  const sortedLocations = [...inventory.locations].sort((a, b) => b.units - a.units)
+  
+  // First, try to find a single location with enough units
+  const singleLocation = sortedLocations.find(loc => loc.units >= unitsNeeded)
+  if (singleLocation) {
+    return [{
+      location: singleLocation.location,
+      units: singleLocation.units,
+      unitsToTake: unitsNeeded,
+    }]
+  }
+  
+  // Otherwise, combine multiple locations
+  const sourceLocations: SourceLocationResult[] = []
+  let remaining = unitsNeeded
+  
+  for (const loc of sortedLocations) {
+    if (remaining <= 0) break
+    if (loc.units <= 0) continue
+    
+    const toTake = Math.min(loc.units, remaining)
+    sourceLocations.push({
+      location: loc.location,
+      units: loc.units,
+      unitsToTake: toTake,
+    })
+    remaining -= toTake
+  }
+  
+  return sourceLocations
+}

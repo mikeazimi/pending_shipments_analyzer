@@ -1,4 +1,5 @@
-import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput, SkuSlotsOutput, OptimalSkuResult } from '@/lib/parsers/types'
+import type { Order, SkuInventory, SkuAnalysisResult, AnalysisOutput, SkuSlotsOutput, OptimalSkuResult, SourceLocation } from '@/lib/parsers/types'
+import { findSourceLocations } from '@/lib/parsers/inventory'
 
 interface SkuDemand {
   sku: string
@@ -292,6 +293,31 @@ function getSkusForOrder(order: Order): Set<string> {
 }
 
 /**
+ * Calculate total units needed for a SKU across fulfilled orders
+ */
+function calculateUnitsNeededForOrders(
+  sku: string,
+  orders: Order[],
+  alreadyFulfilledOrders: Set<string>,
+  newlyFulfilledOrders: string[]
+): number {
+  let totalUnits = 0
+  const relevantOrders = new Set([...alreadyFulfilledOrders, ...newlyFulfilledOrders])
+  
+  for (const order of orders) {
+    if (relevantOrders.has(order.orderNumber)) {
+      for (const lineItem of order.lineItems) {
+        if (lineItem.sku === sku) {
+          totalUnits += lineItem.quantity
+        }
+      }
+    }
+  }
+  
+  return totalUnits
+}
+
+/**
  * Calculate how many new orders would be fulfilled by adding a SKU to the selected set
  */
 function calculateIncrementalOrders(
@@ -419,6 +445,9 @@ export function findOptimalSkuSet(
       fulfilledOrders.add(orderNum)
     }
     
+    // Calculate units needed for the orders this SKU helps fulfill
+    const unitsNeededForStation = calculateUnitsNeededForOrders(bestSku, orders, fulfilledOrders, bestOrdersFulfilled)
+    
     skusToStock.push({
       sku: bestSku,
       productName: demand.productName,
@@ -427,6 +456,7 @@ export function findOptimalSkuSet(
       totalUnitsNeeded: demand.totalUnitsNeeded,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       incrementalOrdersUnlocked: bestIncrementalOrders,
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsNeededForStation),
     })
     
     // Remove from candidates

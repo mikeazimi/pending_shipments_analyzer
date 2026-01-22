@@ -122,4 +122,13 @@ export interface OptimalSkuResult {
   currentInventory: number
   // How many NEW orders would be fulfilled by adding this SKU to the set
   incrementalOrdersUnlocked: number
+  // Source locations to pull inventory from
+  sourceLocations?: SourceLocation[]
+}
+
+// Location to pull inventory from for stocking
+export interface SourceLocation {
+  location: string
+  units: number
+  unitsToTake: number // How many units to take from this location
 }

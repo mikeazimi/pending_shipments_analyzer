@@ -39,13 +39,17 @@ function generateStationsCSV(results: MultiStationOutput): string {
   for (const station of results.stations) {
     lines.push(`${station.stationName.toUpperCase()} - SKU LIST`)
     lines.push('')
-    lines.push('#,SKU,Product Name,Orders at Station,Current Inventory')
+    lines.push('#,SKU,Product Name,Units Needed,Source Locations,Current Inventory,Orders at Station')
     station.skus.forEach((sku, index) => {
       // Escape product name for CSV
       const productName = sku.productName.includes(',') 
         ? `"${sku.productName.replace(/"/g, '""')}"` 
         : sku.productName
-      lines.push(`${index + 1},${sku.sku},${productName},${sku.ordersAtStation},${sku.currentInventory}`)
+      // Format source locations
+      const sourceLocationsStr = sku.sourceLocations && sku.sourceLocations.length > 0
+        ? sku.sourceLocations.map(loc => `${loc.location} (${loc.unitsToTake})`).join('; ')
+        : 'N/A'
+      lines.push(`${index + 1},${sku.sku},${productName},${sku.unitsNeeded},"${sourceLocationsStr}",${sku.currentInventory},${sku.ordersAtStation}`)
     })
     lines.push('')
     lines.push('')

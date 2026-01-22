@@ -23,8 +23,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import type { SkuSlotsOutput, OptimalSkuResult } from '@/lib/parsers/types'
-import { Boxes, TrendingUp, Package, AlertTriangle, CheckCircle2, Eye, Truck, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search, Copy, Check } from 'lucide-react'
+import type { SkuSlotsOutput, OptimalSkuResult, SourceLocation } from '@/lib/parsers/types'
+import { Boxes, TrendingUp, Package, AlertTriangle, CheckCircle2, Eye, Truck, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search, Copy, Check, MapPin } from 'lucide-react'
 
 interface SkuSlotsResultsProps {
   results: SkuSlotsOutput
@@ -87,6 +87,26 @@ function OrdersDialog({
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function SourceLocationsCell({ locations }: { locations?: SourceLocation[] }) {
+  if (!locations || locations.length === 0) {
+    return <span className="text-[#c0ccdb]">—</span>
+  }
+  
+  return (
+    <div className="space-y-1">
+      {locations.map((loc, idx) => (
+        <div key={idx} className="flex items-center gap-1 text-xs">
+          <MapPin className="w-3 h-3 text-[#3281fd] flex-shrink-0" />
+          <span className="font-mono text-[#263444]">{loc.location}</span>
+          <span className="text-[#6b7a8c]">
+            ({loc.unitsToTake}{loc.unitsToTake !== loc.units && ` of ${loc.units}`})
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -263,8 +283,12 @@ function SkuTable({
                 <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider w-12">#</TableHead>
                 <SortableHeader label="SKU" field="sku" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} />
                 <SortableHeader label="Product Name" field="productName" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                <SortableHeader label="Orders" field="ordersImpacted" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
                 <SortableHeader label="Units" field="totalUnitsNeeded" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
+                {!isReceivingPriority && (
+                  <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider">
+                    Source Location(s)
+                  </TableHead>
+                )}
                 <SortableHeader label="Stock" field="currentInventory" currentSort={sortField} currentDirection={sortDirection} onSort={handleSort} align="right" />
                 <SortableHeader 
                   label={isReceivingPriority ? 'Blocked' : 'Unlocked'} 
@@ -286,11 +310,13 @@ function SkuTable({
                     {sku.productName}
                   </TableCell>
                   <TableCell className="text-right text-[#263444] text-sm">
-                    {sku.ordersImpacted}
-                  </TableCell>
-                  <TableCell className="text-right text-[#263444] text-sm">
                     {sku.totalUnitsNeeded}
                   </TableCell>
+                  {!isReceivingPriority && (
+                    <TableCell className="text-sm">
+                      <SourceLocationsCell locations={sku.sourceLocations} />
+                    </TableCell>
+                  )}
                   <TableCell className="text-right text-sm">
                     {sku.currentInventory > 0 ? (
                       <span className="text-[#6de5a2] font-medium">{sku.currentInventory}</span>

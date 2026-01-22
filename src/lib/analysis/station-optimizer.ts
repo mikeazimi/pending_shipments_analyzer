@@ -1,4 +1,5 @@
-import type { Order, SkuInventory } from '@/lib/parsers/types'
+import type { Order, SkuInventory, SourceLocation } from '@/lib/parsers/types'
+import { findSourceLocations } from '@/lib/parsers/inventory'
 
 export interface StationConfig {
   id: number
@@ -21,6 +22,7 @@ export interface StationSkuResult {
   unitsNeeded: number
   currentInventory: number
   ordersAtStation: number // How many orders at this station need this SKU
+  sourceLocations: SourceLocation[] // Where to pull inventory from
 }
 
 export interface MultiStationOutput {
@@ -57,6 +59,30 @@ function canStationFulfillOrder(
     }
   }
   return true
+}
+
+/**
+ * Calculate units needed for a SKU at a specific station based on fulfilled orders
+ */
+function calculateUnitsNeededAtStation(
+  sku: string,
+  fulfilledOrders: string[],
+  orders: Order[]
+): number {
+  let totalUnits = 0
+  const fulfilledSet = new Set(fulfilledOrders)
+  
+  for (const order of orders) {
+    if (fulfilledSet.has(order.orderNumber)) {
+      for (const lineItem of order.lineItems) {
+        if (lineItem.sku === sku) {
+          totalUnits += lineItem.quantity
+        }
+      }
+    }
+  }
+  
+  return totalUnits
 }
 
 /**
@@ -210,12 +236,16 @@ function optimizeStation(
       return order?.lineItems.some(li => li.sku === bestSku)
     }).length
     
+    // Calculate units needed for fulfilled orders at this station
+    const unitsAtStation = calculateUnitsNeededAtStation(bestSku, bestOrdersFulfilled, orders)
+    
     skuResults.push({
       sku: bestSku,
       productName: demand.productName,
-      unitsNeeded: demand.totalUnitsNeeded,
+      unitsNeeded: unitsAtStation,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       ordersAtStation,
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation),
     })
     
     // Remove from available
@@ -357,12 +387,16 @@ export function optimizeMultipleStations(
       globallyFulfilledOrders.add(orderNum)
     }
     
+    // Calculate units needed at this station for the orders it will fulfill
+    const unitsAtStation = calculateUnitsNeededAtStation(bestSku, bestOrdersFulfilled, orders)
+    
     station.skuResults.push({
       sku: bestSku,
       productName: demand.productName,
-      unitsNeeded: demand.totalUnitsNeeded,
+      unitsNeeded: unitsAtStation,
       currentInventory: inventoryMap.get(bestSku)?.totalSellableUnits ?? 0,
       ordersAtStation: bestOrdersFulfilled.length,
+      sourceLocations: findSourceLocations(inventoryMap, bestSku, unitsAtStation),
     })
     
     // Move to next station (round-robin)
@@ -379,12 +413,18 @@ export function optimizeMultipleStations(
       }
     }
     
-    // Update order counts for each SKU
+    // Update order counts and source locations for each SKU based on final fulfillable orders
     for (const skuResult of station.skuResults) {
-      skuResult.ordersAtStation = finalOrders.filter(orderNum => {
+      const ordersWithThisSku = finalOrders.filter(orderNum => {
         const order = orders.find(o => o.orderNumber === orderNum)
         return order?.lineItems.some(li => li.sku === skuResult.sku)
-      }).length
+      })
+      skuResult.ordersAtStation = ordersWithThisSku.length
+      
+      // Recalculate units needed and source locations based on final orders
+      const unitsNeeded = calculateUnitsNeededAtStation(skuResult.sku, finalOrders, orders)
+      skuResult.unitsNeeded = unitsNeeded
+      skuResult.sourceLocations = findSourceLocations(inventoryMap, skuResult.sku, unitsNeeded)
     }
     
     // Sort SKUs by orders at station (descending)

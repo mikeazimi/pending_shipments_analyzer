@@ -27,8 +27,29 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import type { MultiStationOutput, StationResult } from '@/lib/analysis/station-optimizer'
-import { Boxes, TrendingUp, CheckCircle2, Eye, Search, Copy, Check, Layers, AlertCircle } from 'lucide-react'
+import type { MultiStationOutput, StationResult, StationSkuResult } from '@/lib/analysis/station-optimizer'
+import type { SourceLocation } from '@/lib/parsers/types'
+import { Boxes, TrendingUp, CheckCircle2, Eye, Search, Copy, Check, Layers, AlertCircle, MapPin } from 'lucide-react'
+
+function SourceLocationsCell({ locations }: { locations?: SourceLocation[] }) {
+  if (!locations || locations.length === 0) {
+    return <span className="text-[#c0ccdb]">—</span>
+  }
+  
+  return (
+    <div className="space-y-1">
+      {locations.map((loc, idx) => (
+        <div key={idx} className="flex items-center gap-1 text-xs">
+          <MapPin className="w-3 h-3 text-[#3281fd] flex-shrink-0" />
+          <span className="font-mono text-[#263444]">{loc.location}</span>
+          <span className="text-[#6b7a8c]">
+            ({loc.unitsToTake}{loc.unitsToTake !== loc.units && ` of ${loc.units}`})
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 interface StationResultsProps {
   results: MultiStationOutput
@@ -177,7 +198,8 @@ function StationCard({ station, stationIndex }: { station: StationResult; statio
                 <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider w-12">#</TableHead>
                 <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider">SKU</TableHead>
                 <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider">Product Name</TableHead>
-                <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider text-right">Orders</TableHead>
+                <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider text-right">Units</TableHead>
+                <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider">Source Location(s)</TableHead>
                 <TableHead className="text-[#6b7a8c] text-xs font-medium uppercase tracking-wider text-right">Stock</TableHead>
               </TableRow>
             </TableHeader>
@@ -189,7 +211,10 @@ function StationCard({ station, stationIndex }: { station: StationResult; statio
                   <TableCell className="text-[#263444] text-sm max-w-[200px] truncate" title={sku.productName}>
                     {sku.productName}
                   </TableCell>
-                  <TableCell className="text-right text-[#263444] text-sm">{sku.ordersAtStation}</TableCell>
+                  <TableCell className="text-right text-[#263444] text-sm">{sku.unitsNeeded}</TableCell>
+                  <TableCell className="text-sm">
+                    <SourceLocationsCell locations={sku.sourceLocations} />
+                  </TableCell>
                   <TableCell className="text-right text-sm">
                     <span className="text-[#6de5a2] font-medium">{sku.currentInventory}</span>
                   </TableCell>
