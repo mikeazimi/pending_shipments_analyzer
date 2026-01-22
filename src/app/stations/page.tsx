@@ -8,22 +8,22 @@ import { FilterToggles } from '@/components/FilterToggles'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   parsePendingShipmentsCSV,
   groupOrdersByOrderNumber,
   filterOrders,
 } from '@/lib/parsers/pending-shipments'
 import { parseInventoryCSV, aggregateInventoryBySku } from '@/lib/parsers/inventory'
-import { findOptimalSkuSet } from '@/lib/analysis/sku-analyzer'
-import type { Order, SkuInventory, PendingShipmentRow, InventoryRow, SkuSlotsOutput } from '@/lib/parsers/types'
-import { Package, Boxes, Play, LogOut, Layers } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { SkuSlotsResults } from '@/components/SkuSlotsResults'
-import { ExportButtons } from '@/components/ExportButtons'
+import { optimizeMultipleStations, type StationConfig, type MultiStationOutput } from '@/lib/analysis/station-optimizer'
+import type { Order, SkuInventory, PendingShipmentRow, InventoryRow } from '@/lib/parsers/types'
+import { Package, Layers, Play, LogOut, Plus, Trash2, ArrowLeft } from 'lucide-react'
+import { StationResults } from '@/components/StationResults'
+import { StationExportButtons } from '@/components/StationExportButtons'
 import Link from 'next/link'
 
-export default function DashboardPage() {
+export default function StationsPage() {
   // File upload state
   const [pendingShipmentsFile, setPendingShipmentsFile] = useState<string | null>(null)
   const [inventoryFile, setInventoryFile] = useState<string | null>(null)
@@ -41,11 +41,14 @@ export default function DashboardPage() {
   const [excludeAllocated, setExcludeAllocated] = useState(true)
   const [excludeToted, setExcludeToted] = useState(true)
 
-  // SKU Slots configuration
-  const [skuSlotCount, setSkuSlotCount] = useState<number>(50)
+  // Station configuration
+  const [stations, setStations] = useState<StationConfig[]>([
+    { id: 1, name: 'Station 1', skuSlots: 50 },
+    { id: 2, name: 'Station 2', skuSlots: 50 },
+  ])
 
   // Analysis results
-  const [analysisResults, setAnalysisResults] = useState<SkuSlotsOutput | null>(null)
+  const [analysisResults, setAnalysisResults] = useState<MultiStationOutput | null>(null)
   const [totalOrdersAnalyzed, setTotalOrdersAnalyzed] = useState<number>(0)
 
   const handlePendingShipmentsUpload = useCallback(async (file: File) => {
@@ -101,6 +104,25 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const addStation = () => {
+    const newId = Math.max(...stations.map(s => s.id), 0) + 1
+    setStations([...stations, { id: newId, name: `Station ${newId}`, skuSlots: 50 }])
+  }
+
+  const removeStation = (id: number) => {
+    if (stations.length <= 1) {
+      toast.error('You need at least one station')
+      return
+    }
+    setStations(stations.filter(s => s.id !== id))
+  }
+
+  const updateStation = (id: number, field: 'name' | 'skuSlots', value: string | number) => {
+    setStations(stations.map(s => 
+      s.id === id ? { ...s, [field]: value } : s
+    ))
+  }
+
   const runAnalysis = useCallback(() => {
     if (allOrders.length === 0) {
       toast.error('Please upload a pending shipments report first')
@@ -109,6 +131,11 @@ export default function DashboardPage() {
 
     if (!inventoryMap) {
       toast.error('Please upload an inventory report to run the analysis')
+      return
+    }
+
+    if (stations.length === 0) {
+      toast.error('Please add at least one station')
       return
     }
 
@@ -128,12 +155,12 @@ export default function DashboardPage() {
         return
       }
 
-      const results = findOptimalSkuSet(filteredOrders, inventoryMap, skuSlotCount)
+      const results = optimizeMultipleStations(stations, filteredOrders, inventoryMap)
       setAnalysisResults(results)
       setTotalOrdersAnalyzed(filteredOrders.length)
 
       toast.success(
-        `Found ${results.skusToStock.length} optimal SKUs - ${results.totalOrdersFulfilled} orders fulfillable (${results.fulfillmentRate.toFixed(1)}%)`
+        `Optimized ${stations.length} stations - ${results.totalOrdersFulfilled} orders fulfillable (${results.fulfillmentRate.toFixed(1)}%)`
       )
     } catch (error) {
       console.error('Analysis failed:', error)
@@ -141,7 +168,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, skuSlotCount])
+  }, [allOrders, selectedStatuses, excludeAllocated, excludeToted, inventoryMap, stations])
 
   const clearAll = () => {
     setPendingShipmentsFile(null)
@@ -162,23 +189,23 @@ export default function DashboardPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#ef5252] rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-[#3281fd] rounded-lg flex items-center justify-center">
+                <Layers className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-[#000000]">Pack to Light Analyzer</h1>
-                <p className="text-xs text-[#6b7a8c]">Optimize your pick area</p>
+                <h1 className="text-lg font-semibold text-[#000000]">Multi-Station Optimizer</h1>
+                <p className="text-xs text-[#6b7a8c]">Distribute SKUs across stations</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link href="/stations">
+              <Link href="/">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-[#e2e8f0] text-[#3281fd] hover:bg-[#3281fd]/10"
+                  className="border-[#e2e8f0] text-[#6b7a8c] hover:bg-[#f4f7fa]"
                 >
-                  <Layers className="w-4 h-4 mr-2" />
-                  Multi-Station
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Single Station
                 </Button>
               </Link>
               <Button
@@ -267,25 +294,68 @@ export default function DashboardPage() {
                   </>
                 )}
 
-                {/* SKU Slots Configuration */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Boxes className="w-4 h-4 text-[#3281fd]" />
-                    <Label className="text-sm font-medium text-[#263444]">
-                      SKU Slots in Pick Area
-                    </Label>
+                {/* Station Configuration */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-[#3281fd]" />
+                      <Label className="text-sm font-medium text-[#263444]">
+                        Stations
+                      </Label>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={addStation}
+                      className="h-7 px-2 border-[#e2e8f0] text-[#3281fd] hover:bg-[#3281fd]/10"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add
+                    </Button>
                   </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={500}
-                    value={skuSlotCount}
-                    onChange={(e) => setSkuSlotCount(Math.max(1, parseInt(e.target.value) || 50))}
-                    placeholder="50"
-                    className="bg-white border-[#e2e8f0] text-[#000000] focus:border-[#3281fd] focus:ring-[#3281fd]"
-                  />
+                  
+                  <div className="space-y-2">
+                    {stations.map((station, index) => (
+                      <div key={station.id} className="flex items-center gap-2 p-2 bg-[#f4f7fa] rounded-lg">
+                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
+                          index === 0 ? 'bg-[#3281fd]/20 text-[#3281fd]' : 
+                          index === 1 ? 'bg-[#6de5a2]/20 text-[#4db87a]' : 
+                          index === 2 ? 'bg-[#ffce75]/20 text-[#b38f52]' : 
+                          'bg-[#c0ccdb]/20 text-[#6b7a8c]'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <Input
+                          value={station.name}
+                          onChange={(e) => updateStation(station.id, 'name', e.target.value)}
+                          className="h-7 text-sm bg-white border-[#e2e8f0] flex-1"
+                          placeholder="Station name"
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          max={500}
+                          value={station.skuSlots}
+                          onChange={(e) => updateStation(station.id, 'skuSlots', parseInt(e.target.value) || 50)}
+                          className="h-7 w-16 text-sm bg-white border-[#e2e8f0] text-center"
+                        />
+                        <span className="text-xs text-[#6b7a8c]">slots</span>
+                        {stations.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeStation(station.id)}
+                            className="h-7 w-7 p-0 text-[#c0ccdb] hover:text-[#ef5252] hover:bg-[#ef5252]/10"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
                   <p className="text-xs text-[#6b7a8c]">
-                    Find the optimal {skuSlotCount} SKUs to stock
+                    Total: {stations.reduce((sum, s) => sum + s.skuSlots, 0)} SKU slots across {stations.length} station{stations.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 
@@ -299,7 +369,7 @@ export default function DashboardPage() {
                     className="w-full bg-[#3281fd] hover:bg-[#2570e8] text-white font-medium"
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    Run Analysis
+                    Optimize Stations
                   </Button>
 
                   {(pendingShipmentsFile || inventoryFile) && (
@@ -347,30 +417,38 @@ export default function DashboardPage() {
               <Card className="bg-white border-[#e2e8f0] shadow-sm">
                 <CardContent className="py-16 text-center">
                   <div className="w-16 h-16 bg-[#f4f7fa] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Boxes className="w-8 h-8 text-[#c0ccdb]" />
+                    <Layers className="w-8 h-8 text-[#c0ccdb]" />
                   </div>
                   <h2 className="text-lg font-semibold text-[#000000] mb-2">
-                    Ready to Analyze
+                    Multi-Station Optimizer
                   </h2>
                   <p className="text-[#6b7a8c] max-w-md mx-auto text-sm">
-                    Upload your pending shipments and inventory reports, set your SKU slot count,
-                    then click &quot;Run Analysis&quot; to find the optimal SKUs for your pick area.
+                    Configure your stations on the left, upload your reports, then click 
+                    &quot;Optimize Stations&quot; to find the best SKU distribution across all stations.
                   </p>
+                  <div className="mt-6 p-4 bg-[#f4f7fa] rounded-lg max-w-md mx-auto text-left">
+                    <p className="text-xs text-[#6b7a8c] uppercase tracking-wider font-medium mb-2">How it works</p>
+                    <ul className="text-sm text-[#263444] space-y-1">
+                      <li>• Each station must have ALL SKUs to fulfill an order</li>
+                      <li>• SKUs can overlap between stations if beneficial</li>
+                      <li>• Algorithm balances load across stations</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="flex justify-between items-center print:hidden">
                   <h2 className="text-base font-semibold text-[#000000]">
-                    Optimal {analysisResults.skuSlotCount} SKUs
+                    Station Optimization Results
                     <span className="text-[#6b7a8c] font-normal ml-2">
                       ({totalOrdersAnalyzed.toLocaleString()} orders analyzed)
                     </span>
                   </h2>
-                  <ExportButtons analysisResults={analysisResults} />
+                  <StationExportButtons analysisResults={analysisResults} />
                 </div>
 
-                <SkuSlotsResults results={analysisResults} />
+                <StationResults results={analysisResults} />
               </>
             )}
           </div>
